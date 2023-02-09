@@ -15,6 +15,22 @@
     <arg name="world_name" value="$(arg world_file)"/>
   </include>
 
+    <!-- this line will literally launch a launch file -->
+    <!-- <include file="$(find <packagename>)/path/filename.launch"> -->
+  <!-- <include file="$(find mie443_contest1)/launch/gmapping.launch"/> -->
+  <!-- gmapping has no nodes called gazebo -->
+  <!-- roslaunch mie443_contest1 gmapping.launch -->
+
+ 
+  <!-- <node name="rviz" pkg="rviz" type="rviz" args="-d $(find turtlebot_rviz_launchers)/rviz/navigation.rviz"/> -->
+
+
+  <!-- <include file="#(find opt)/ros/kinetic/share/turtlebot_rviz_launchers/launch/view_navigation.launch"/> -->
+  <!-- roslaunch turtlebot_rviz_launchers view_navigation.launch -->
+
+<!-- /opt/ros/kinetic/share/turtlebot_rviz_launchers/launch -->
+<!-- getting error that i'm loading a node called "node " twice due to the launch files -->
+
   <include file="$(find turtlebot_gazebo)/launch/includes/$(arg base).launch.xml">
     <arg name="base" value="$(arg base)"/>
     <arg name="stacks" value="$(arg stacks)"/>
@@ -27,6 +43,7 @@
 
   <!-- Fake laser -->
   <node pkg="nodelet" type="nodelet" name="laserscan_nodelet_manager" args="manager"/>
+
   <node pkg="nodelet" type="nodelet" name="depthimage_to_laserscan"
         args="load depthimage_to_laserscan/DepthImageToLaserScanNodelet laserscan_nodelet_manager">
     <param name="scan_height" value="10"/>
@@ -35,4 +52,7 @@
     <remap from="image" to="/camera/depth/image_raw"/>
     <remap from="scan" to="/scan"/>
   </node>
+
+  
+
 </launch>

@@ -10,8 +10,10 @@ void bumperCallback(const kobuki_msgs::BumperEvent::ConstPtr& msg)
 	//fill with your code
     // Access using bumper[kobuki_msgs::BumperEvent::{}] LEFT, CENTER, or RIGHT
     bumper[msg->bumper] = msg->state;
-    ROS_INFO("Bumper #%lf pressed.", bumper);
+    //ROS_INFO("Bumper #%lf pressed.", bumper);
 }
+
+
 
 void laserCallback(const sensor_msgs::LaserScan::ConstPtr& msg)
 {
@@ -20,10 +22,12 @@ void laserCallback(const sensor_msgs::LaserScan::ConstPtr& msg)
     // desiredNLasers = DEG2RAD(desiredAngle)/msg->angle_increment;
     // ROS_INFO("Size of laser scan array: %i and size of offset: %i", nLasers, desiredNLasers);
 
-    minLaserDist = std::numeric_limits<float>::infinity();
+    minLaserDist = std::numeric_limits<float>::infinity(); //setting minLaserDistance to positive infinity
+
     nLasers = (msg->angle_max - msg->angle_min) / msg->angle_increment;
+    
     desiredNLasers = desiredAngle*M_PI / (180*msg->angle_increment);
-    ROS_INFO("Size of laser scan array: %i and size of offset: %i", nLasers, desiredNLasers);
+    //ROS_INFO("Size of laser scan array: %i and size of offset: %i", nLasers, desiredNLasers);
     
     // Checks if desiredAngle is less than max range of the laser scanner.
     // If true, cut out unnecessary laser scanner readings
@@ -39,7 +43,8 @@ void laserCallback(const sensor_msgs::LaserScan::ConstPtr& msg)
             minLaserDist = std::min(minLaserDist, msg->ranges[laser_idx]);
         }
     }
-    ROS_INFO("Min Laser Dist: %f", minLaserDist);
+    ROS_INFO("the range is %d",msg->ranges);
+    //ROS_INFO("Min Laser Dist: %f", minLaserDist);
 
 
 }
@@ -56,6 +61,10 @@ void odomCallback (const nav_msgs::Odometry::ConstPtr& msg)
     posY = msg->pose.pose.position.y;
     yaw = tf::getYaw(msg->pose.pose.orientation);
     // tf::getYaw(msg->pose.pose.orientation);
-    ROS_INFO("Position: (%f, %f) Orientation: %f rad or %f degrees.", posX, posY, yaw, RAD2DEG(yaw));
+    //ROS_INFO("Position: (%f, %f) Orientation: %f rad or %f degrees.", posX, posY, yaw, RAD2DEG(yaw));
 }
 // #endif
+
+//create a funciton that prints linear and angular velcoity
+//create a funciton that prints laser readings
+//create a funciotn that prints bumpers

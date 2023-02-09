@@ -20,9 +20,9 @@ float posX = 0.0, posY = 0.0, yaw = 0.0;
 uint8_t bumper[3] = {kobuki_msgs::BumperEvent::RELEASED, kobuki_msgs::BumperEvent::RELEASED, kobuki_msgs::BumperEvent::RELEASED};
 
 
-// Added for LASER demo
-float minLaserDist = std::numeric_limits<float>::infinity();
-int32_t nLasers=0, desiredNLasers=0, desiredAngle=5;
+// Added global variables for LASER demo
+float minLaserDist=std::numeric_limits<float>::infinity(); //setting it to positive infinity
+int32_t nLasers=0,desiredNLasers=0,desiredAngle=5;
 
 
 // SECOND EXAMPLE: Bumper
@@ -40,21 +40,25 @@ void laserCallback(const sensor_msgs::LaserScan::ConstPtr& msg)
     // desiredNLasers = DEG2RAD(desiredAngle)/msg->angle_increment;
     // ROS_INFO("Size of laser scan array: %i and size of offset: %i", nLasers, desiredNLasers);
 
-    minLaserDist = std::numeric_limits<float>::infinity();
-    nLasers = (msg->angle_max - msg->angle_min) / msg->angle_increment;
-    desiredNLasers = desiredAngle*M_PI / (180*msg->angle_increment);
-    ROS_INFO("Size of laser scan array: %i and size of offset: %i", nLasers, desiredNLasers);
+    nLasers=(msg->angle_max-msg->angle_min)/msg->angle_increment;
+    desiredNLasers=DEG2RAD(desiredAngle)/msg->angle_increment;
+    ROS_INFO("size of the laser scan array %i and size of offset %i",nLasers,desiredNLasers);
+
+    // minLaserDist = std::numeric_limits<float>::infinity();
+    // nLasers = (msg->angle_max - msg->angle_min) / msg->angle_increment;
+    // desiredNLasers = desiredAngle*M_PI / (180*msg->angle_increment);
+    // ROS_INFO("Size of laser scan array: %i and size of offset: %i", nLasers, desiredNLasers);
     
-    if (desiredAngle * M_PI / 180 < msg->angle_max && -desiredAngle * M_PI / 180 > msg->angle_min) {
-        for (uint32_t laser_idx = nLasers / 2 - desiredNLasers; laser_idx < nLasers / 2 + desiredNLasers; ++laser_idx){
-            minLaserDist = std::min(minLaserDist, msg->ranges[laser_idx]);
-        }
-    }
-    else {
-        for (uint32_t laser_idx = 0; laser_idx < nLasers; ++laser_idx) {
-            minLaserDist = std::min(minLaserDist, msg->ranges[laser_idx]);
-        }
-    }
+    // if (desiredAngle * M_PI / 180 < msg->angle_max && -desiredAngle * M_PI / 180 > msg->angle_min) {
+    //     for (uint32_t laser_idx = nLasers / 2 - desiredNLasers; laser_idx < nLasers / 2 + desiredNLasers; ++laser_idx){
+    //         minLaserDist = std::min(minLaserDist, msg->ranges[laser_idx]);
+    //     }
+    // }
+    // else {
+    //     for (uint32_t laser_idx = 0; laser_idx < nLasers; ++laser_idx) {
+    //         minLaserDist = std::min(minLaserDist, msg->ranges[laser_idx]);
+    //     }
+    // }
 
 }
 
@@ -97,48 +101,51 @@ int main(int argc, char **argv)
     while(ros::ok() && secondsElapsed <= 480) {
         ros::spinOnce();
 
-        // ROS_INFO("Postion: (%f, %f) Orientation: %f degrees Range: %f", posX, posY, RAD2DEG(yaw), minLaserDist);
-        // Check if any of the bumpers were pressed.
-        bool any_bumper_pressed = false;
-        for (uint32_t b_idx = 0; b_idx < N_BUMPER; ++b_idx) {
-            any_bumper_pressed |= (bumper[b_idx] == kobuki_msgs::BumperEvent::PRESSED);
-        }    
 
-        if (posX < 0.5 && yaw < M_PI / 12 && !any_bumper_pressed && minLaserDist > 0.7) {
-            angular = 0.0;
-            linear = 0.2;
-        }
-        else if (yaw < M_PI / 2 && posX > 0.5 && !any_bumper_pressed && minLaserDist > 0.5) {
-            angular = M_PI / 6;
-            linear = 0.0;
-        }
-        else if (minLaserDist > 1. && !any_bumper_pressed) {
-            linear = 0.1;
-            if (yaw < 17 / 36 * M_PI || posX > 0.6) {
-                angular = M_PI / 12.;
-            }
-            else if (yaw < 19 / 36 * M_PI || posX < 0.4) {
-                angular = -M_PI / 12.;
-            }
-            else {
-                angular = 0;
-            }
-        }
-        else {
-            angular = 0.0;
-            linear = 0.0;
-        }
+    //     // ROS_INFO("Postion: (%f, %f) Orientation: %f degrees Range: %f", posX, posY, RAD2DEG(yaw), minLaserDist);
+    //     // Check if any of the bumpers were pressed.
+    //     bool any_bumper_pressed = false;
+    //     for (uint32_t b_idx = 0; b_idx < N_BUMPER; ++b_idx) {
+    //         any_bumper_pressed |= (bumper[b_idx] == kobuki_msgs::BumperEvent::PRESSED);
+    //     }    
 
-        vel.angular.z = angular;
-        vel.linear.x = linear;
-        vel_pub.publish(vel);
+    //     if (posX < 0.5 && yaw < M_PI / 12 && !any_bumper_pressed && minLaserDist > 0.7) {
+    //         angular = 0.0;
+    //         linear = 0.2;
+    //     }
+    //     else if (yaw < M_PI / 2 && posX > 0.5 && !any_bumper_pressed && minLaserDist > 0.5) {
+    //         angular = M_PI / 6;
+    //         linear = 0.0;
+    //     }
+    //     else if (minLaserDist > 1. && !any_bumper_pressed) {
+    //         linear = 0.1;
+    //         if (yaw < 17 / 36 * M_PI || posX > 0.6) {
+    //             angular = M_PI / 12.;
+    //         }
+    //         else if (yaw < 19 / 36 * M_PI || posX < 0.4) {
+    //             angular = -M_PI / 12.;
+    //         }
+    //         else {
+    //             angular = 0;
+    //         }
+    //     }
+    //     else {
+    //         angular = 0.0;
+    //         linear = 0.0;
+    //     }
 
-        // The last thing to do is to update the timer.
-        secondsElapsed = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now()-start).count();
-        loop_rate.sleep();
+    //     vel.angular.z = angular;
+    //     vel.linear.x = linear;
+    //     vel_pub.publish(vel);
+
+    //     // The last thing to do is to update the timer.
+    //     secondsElapsed = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now()-start).count();
+    //     loop_rate.sleep();
+
+    
     }
 
-    return 0;
+    // return 0;
 }
 
 
