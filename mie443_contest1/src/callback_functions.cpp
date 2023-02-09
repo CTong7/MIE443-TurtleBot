@@ -39,11 +39,26 @@ void laserCallback(const sensor_msgs::LaserScan::ConstPtr& msg)
         }
     }
     else {
+        int mindex=0;//andrew
+
         for (uint32_t laser_idx = 0; laser_idx < nLasers; ++laser_idx) {
             minLaserDist = std::min(minLaserDist, msg->ranges[laser_idx]);
+
+            //reassign mindex if a smaller is found
+            if (msg->ranges[laser_idx]<msg->ranges[mindex]){
+                mindex=laser_idx;
+
+            }
+
         }
+
+        laser_min_index=mindex;
+        //msg-->ranges is a pointer, you want to access the ranges property of the msg object
+        //msg points ot a message object that stores the ranges value
+        // this is different than the vel.linear.x, since vel is an object, whereas msg is an object
     }
     ROS_INFO("the range is %d",msg->ranges);
+
     //ROS_INFO("Min Laser Dist: %f", minLaserDist);
 
 
