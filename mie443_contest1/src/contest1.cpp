@@ -106,29 +106,56 @@ void move_x_meters(double meters){
     double distance = 0.0;
 
     // Keep moving 
-    while (distance < meters){
-        // Must spin to update odom values
-        ros::spinOnce(); // More efficient way? maybe just ask odom_2 for info
-        // Can we somehow wait here until odom_2 returns a value?
+    if (meters>0){
+        while (distance < meters){
+            // Must spin to update odom values
+            ros::spinOnce(); // More efficient way? maybe just ask odom_2 for info
+            // Can we somehow wait here until odom_2 returns a value?
 
-        distance = sqrt(pow(init_pose[0]-posX,2.0) + pow(init_pose[1]-posY,2.0));
+            distance = sqrt(pow(init_pose[0]-posX,2.0) + pow(init_pose[1]-posY,2.0));
 
-        ROS_INFO("My distance: %f", distance);
-        vel_forward.linear.x=-0.2;
+            ROS_INFO("My distance: %f", distance);
+            vel_forward.linear.x=0.2;
+            vel_pub_custom.publish(vel_forward);
+
+            //Restricts loop rate to 100 Hz
+            loop_rate_2.sleep();
+            // For loop rate 5, distance = 0.345 m, but actual distance travelled = 0.5 m
+            // For loop rate 2, distance = 0.285 m
+            // For loop rate 100
+        }
+
+        // Brake
+        vel_forward.linear.x=0.0;
+        vel_forward.linear.y=0.0;
         vel_pub_custom.publish(vel_forward);
-
-        //Restricts loop rate to 100 Hz
-        loop_rate_2.sleep();
-        // For loop rate 5, distance = 0.345 m, but actual distance travelled = 0.5 m
-        // For loop rate 2, distance = 0.285 m
-        // For loop rate 100
     }
 
-    // Brake
-    vel_forward.linear.x=0.0;
-    vel_forward.linear.y=0.0;
-    vel_pub_custom.publish(vel_forward);
+    if (meters<0){
+        while (distance > meters){
+            // Must spin to update odom values
+            ros::spinOnce(); // More efficient way? maybe just ask odom_2 for info
+            // Can we somehow wait here until odom_2 returns a value?
 
+            distance = sqrt(pow(init_pose[0]-posX,2.0) + pow(init_pose[1]-posY,2.0));
+
+            ROS_INFO("My distance: %f", distance);
+            vel_forward.linear.x=-0.2;
+            vel_pub_custom.publish(vel_forward);
+
+            //Restricts loop rate to 100 Hz
+            loop_rate_2.sleep();
+            // For loop rate 5, distance = 0.345 m, but actual distance travelled = 0.5 m
+            // For loop rate 2, distance = 0.285 m
+            // For loop rate 100
+        }
+
+        // Brake
+        vel_forward.linear.x=0.0;
+        vel_forward.linear.y=0.0;
+        vel_pub_custom.publish(vel_forward);
+    }
+        
 }
 
 void rotate(double desired_angle)
@@ -313,10 +340,6 @@ int main(int argc, char **argv)
             linear = 0.4;
         }
 
-        if (){
-
-        }
-
         //what defines if way is clear?
         //minLaserDist > laser_min_dist
         //Section 2: only activates if a bumper is hit
@@ -324,21 +347,28 @@ int main(int argc, char **argv)
             
             //Case 1: left bumper is hit
             if(which_bumper_pressed==0){
-                rotate(DEG2RAD(-30)); //rotate clockwise ie negative angle
                 vel.angular.z = 0;
                 vel.linear.x = 0;
+                vel_pub.publish(vel);
+                move_x_meters(-0.1);
+                rotate(DEG2RAD(-30)); //rotate clockwise ie negative angle
+
             }
             //Case 2: middle bumper is hit
             else if(which_bumper_pressed==1){
-                rotate(DEG2RAD(100)); // rotate 100 degrees counter clock wise
                 vel.angular.z = 0;
                 vel.linear.x = 0;
+                vel_pub.publish(vel);
+                move_x_meters(-0.1);
+                rotate(DEG2RAD(100)); // rotate 100 degrees counter clock wise
             }
 
             //Case 3: right bumper is hit
             else{
                 vel.angular.z = 0;
                 vel.linear.x = 0;
+                vel_pub.publish(vel);
+                move_x_meters(-0.1);
                 rotate(DEG2RAD(30)); // rotate counter clock wise
             }
 
@@ -352,9 +382,9 @@ int main(int argc, char **argv)
             //probability it turns left 30%
             // probability it turns right 70%
             // rotate left 30, rotate right 90
-            vel.angular.z = 0;
-            vel.linear.x = 0;
-            rotate(DEG2RAD(30));
+            // vel.angular.z = 1;
+            vel.linear.x = 1;
+            // rotate(DEG2RAD(30));
         }
 
         if (print_counter>50){ //we want to print once every second, the loop runs 100 times per second
