@@ -22,5 +22,7 @@ include_directories(include ${OpenCV_INCLUDE_DIRS} ${catkin_INCLUDE_DIRS})
 
 # add the publisher example
 add_executable(contest1 src/contest1.cpp)
+add_executable(contest1_alla src/contest1_alla.cpp)
 target_link_libraries(contest1 ${catkin_LIBRARIES} ${OpenCV_LIB})
+target_link_libraries(contest1_alla ${catkin_LIBRARIES} ${OpenCV_LIB})
 
