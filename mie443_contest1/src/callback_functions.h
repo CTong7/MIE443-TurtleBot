@@ -7,11 +7,13 @@
 #include <kobuki_msgs/BumperEvent.h>
 #include <sensor_msgs/LaserScan.h>
 #include <stdio.h>
+#include <stdlib.h> // added random function library, need to push this
 #include <cmath>
 #include <chrono>
 #include <iostream>
 #include <cstdio>
 #include <ctime>
+#include <random>
 //#include "robot_functions.h"
 //TODO: add #ifndef
 
@@ -25,6 +27,7 @@ uint8_t bumper[3] = {kobuki_msgs::BumperEvent::RELEASED, kobuki_msgs::BumperEven
 // Added for LASER demo
 float minLaserDist = std::numeric_limits<float>::infinity();
 int32_t nLasers=0, desiredNLasers=0, desiredAngle=180; 
+int32_t laser_min_index=320; //set original min to random index
 
 float posX = 0.0, posY = 0.0, yaw = 0.0;
 float angular_vel_to_be_published = 0.0;

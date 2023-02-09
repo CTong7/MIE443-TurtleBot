@@ -215,6 +215,8 @@ void rotate(double desired_angle)
 
 }
 
+
+
 int main(int argc, char **argv)
 {
     ros::init(argc, argv, "image_listener"); //can change the node name to anything
@@ -288,39 +290,16 @@ int main(int argc, char **argv)
         // ** IMPORTANT: If something is too close to sensor, it will not be detected!
         // True if path in front of robot has enough space to move into.
         bool is_way_clear = (minLaserDist > laser_min_dist); //robot has deadzone between 0.5 and 4.5meters
+        //laser_mind_dist is defined as 0.5 meters
         bool near_wall;
         bool near_end_of_wall;
         bool is_stuck;
+
+
         
-
-        if (near_wall && (is_way_clear && !any_bumper_pressed)) {
-            //Wall follower
-
-            //Detect Flat Wall OR obstacle that has length > 1m.
-
-            //Decide to follow left or right
-            
-            //Stone-Skipping Function
-
-        }
-
-       
-        
-        //drive foward 
-        if (is_way_clear && !any_bumper_pressed) {
-            // Execute movement
-            angular = 0.0;
-            linear = 0.4;
-        }
-
-        if (){
-
-        }
-
-        //what defines if way is clear?
-        //minLaserDist > laser_min_dist
-        //Section 2: only activates if a bumper is hit
-        else if (any_bumper_pressed) {
+        //Trigger 1: Bumper is hit
+        // Behaviour 1: Rotate out
+        if (any_bumper_pressed) {
             
             //Case 1: left bumper is hit
             if(which_bumper_pressed==0){
@@ -342,41 +321,61 @@ int main(int argc, char **argv)
                 rotate(DEG2RAD(30)); // rotate counter clock wise
             }
 
+
+        }
+       
+        
+        //drive foward 
+        else if (is_way_clear && !any_bumper_pressed) {
+            // Execute movement
+            angular = 0.0;
+            linear = 0.4;
+        }
+        
+        //if (laser_min_index<(int)nLasers/5 )
+        // this gets you the left 12 degrees (60/5)
+        // index of laser starts on left
+        //number of lasers by default is 639, can be changed
+        // each one of these lasers has seperate index
+
+        //Section 1: if the shortest distance is in the middle (ie, robot is roughly perpendicular to wall) 
+        else if (laser_min_index>(int)nLasers/5 && laser_min_index<(int)nLasers*4/5 &&!any_bumper_pressed){
+            // greater than 12 degrees less than 48 degrees then the min distance is in the center
            
-            vel_pub.publish(vel);
-          
+            //probability generator that picks right or left
 
+                    //int a=random_bool();
+            int random_bool=rand()%2; //returns 0 or 1 as an integer
+            ROS_INFO("boolean is %i",random_bool);
+        
+            //if random_bool is 0, turn left 90
+            if (random_bool==0){
+                rotate(DEG2RAD(90))
+            }
+
+            //turn right 90
+            else {
+                rotate(DEG2RAD(-90))
+            }
         }
 
-        else {
-            //probability it turns left 30%
-            // probability it turns right 70%
-            // rotate left 30, rotate right 90
-            vel.angular.z = 0;
-            vel.linear.x = 0;
-            rotate(DEG2RAD(30));
-        }
+     
 
-        if (print_counter>50){ //we want to print once every second, the loop runs 100 times per second
-            //printLaser()
-            ROS_INFO("Position: (%f, %f) Orientation: %f degrees.", posX, posY, yaw, RAD2DEG(yaw));
-            print_counter=0;
-        }
-        print_counter++;
+        // if (print_counter>50){ //we want to print once every second, the loop runs 100 times per second
+        //     //printLaser()
+        //     ROS_INFO("Position: (%f, %f) Orientation: %f degrees.", posX, posY, yaw, RAD2DEG(yaw));
+        //     print_counter=0;
+        // }
+        // print_counter++;
 
+
+        //Publish velocities
         vel.angular.z = angular;
         vel.linear.x = linear;
         vel_pub.publish(vel);
 
-        // next time work on different brnaches
-        // we normally merge branches
-        // normally work indepdently and merge to main
-
-
-
         // Update the timer.
         secondsElapsed = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now()-start).count();
-        
         loop_rate.sleep();
         loopCount++;
     }
