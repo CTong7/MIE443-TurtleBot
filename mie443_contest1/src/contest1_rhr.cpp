@@ -44,6 +44,17 @@ git push origin main
 
 // #include "move_functions.h"
 
+//Rotate Function -- OLD
+void rotateBot(){
+    ros::NodeHandle nh_custom;
+    ros::Publisher vel_pub_custom = nh_custom.advertise<geometry_msgs::Twist>("cmd_vel_mux/input/teleop", 1);
+    geometry_msgs::Twist vel_rotate;
+
+    vel_rotate.angular.z=0.8;
+    vel_pub_custom.publish(vel_rotate);
+    return;
+}
+
 void e_stop(int time) { // why do we have this?
     ros::NodeHandle nh_custom;
     ros::Publisher vel_pub_custom = nh_custom.advertise<geometry_msgs::Twist>("cmd_vel_mux/input/teleop", 1);
@@ -163,7 +174,7 @@ void rotate(double desired_angle)
             angle += 2*M_PI;
         }
 
-        ROS_INFO("My angle turned CCW: %lf", RAD2DEG(angle));
+        //ROS_INFO("My angle turned CCW: %lf", RAD2DEG(angle));
         
         //Turn Counterclockwise
         vel_forward.angular.z=0.4;
@@ -178,28 +189,21 @@ void rotate(double desired_angle)
 
     // For CW
     if (desired_angle < 0){
-
         while (angle > desired_angle){
         // Must spin to update odom values
         ros::spinOnce(); // More efficient way? maybe just ask odom_2 for info
-        if ( yaw < old_yaw){
-            angle = yaw - old_yaw; // yaw always less than old_yaw when turning CW
-
-        }
-        else{
-            angle = yaw - old_yaw -2*M_PI;
-        }
-
-
-        // if (angle > 0){
-        //     // Add 360 deg to correct for when robot rotates past 0 degrees.
-        //     angle -= 2*M_PI;
-        // }
-
-        ROS_INFO("My angle turned CW: %lf", RAD2DEG(angle));
         
-        //Turn clockwise
-        vel_forward.angular.z=-0.3;
+        angle = old_yaw - yaw;
+
+        if (angle > 0){
+            // Add 360 deg to correct for when robot rotates past 0 degrees.
+            angle -= 2*M_PI;
+        }
+
+        //ROS_INFO("My angle turned CW: %lf", RAD2DEG(angle));
+        
+        //Turn Counterclockwise
+        vel_forward.angular.z=-0.4;
 
         vel_pub_custom.publish(vel_forward);
 
@@ -220,12 +224,12 @@ int main(int argc, char **argv)
     ros::init(argc, argv, "image_listener"); //can change the node name to anything
     ros::NodeHandle nh;
 
-    // 2 subscribers
+    // 2 subscribers 
     ros::Subscriber bumper_sub = nh.subscribe("mobile_base/events/bumper", 10, &bumperCallback);
     ros::Subscriber laser_sub = nh.subscribe("scan", 10, &laserCallback);
     ros::Subscriber odom = nh.subscribe("odom", 1, &odomCallback);
 
-        // 1 publisher (creating publisher object)
+    // 1 publisher (creating publisher object)
     //ros::Publisher publishername=node_handle.advertise<message type>(topic_name, queuesize)
     ros::Publisher vel_pub = nh.advertise<geometry_msgs::Twist>("cmd_vel_mux/input/teleop", 1);
 
@@ -239,8 +243,9 @@ int main(int argc, char **argv)
     /**in this case vel is the name of the variable. We can assign vlaues to it by doing
     vel.linear.x= <some value>
     vel.linear.y= <some value>
-    in our code this is assigned at the bototm in the while loop*/
+    in our code this is assigned at the bototm in the while loop
     
+    */ 
 
     // contest count down timer
     std::chrono::time_point<std::chrono::system_clock> start;
@@ -262,32 +267,116 @@ int main(int argc, char **argv)
         // ROS_INFO("Postion: (%f, %f) Orientation: %f degrees Range: %f", posX, posY, RAD2DEG(yaw), minLaserDist);
         // Check if any of the bumpers were pressed.
         bool any_bumper_pressed = false;
-        //for i in range 0,1,2
-        uint32_t which_bumper_pressed =3;
-
         for (uint32_t b_idx = 0; b_idx < N_BUMPER; ++b_idx) {
             any_bumper_pressed |= (bumper[b_idx] == kobuki_msgs::BumperEvent::PRESSED);
-            // left_bumper
-            // middle_bumper
-            // right_bumper
+        }    
 
-            // cut itout
-            if (any_bumper_pressed==true){
-                which_bumper_pressed=b_idx;
+        ///////////////////* RANDOM WALK *////////////////////
+        // How to improve:
+        // Bias it towards empty spaces. If minlaserdist comes from a specific side, turn to side with more space
+        // If minlaserdist is very close to the edge of the field of view, don't need to turn as much.
+        
+        // How to fix poor mapping? How can we improve our map?
+        /*
+        
+        Poor Mapping is:
+        --- Unexplored Areas
+        --- Incorrect Wall Placement
+        ------ Walls are not drawn at the right angles to each other
+        ------ The robot is drawing extra walls where there isn't any
+        ------ The robot isn't detecting and drawing some walls
+        
+        *Would wall-following help with any of these issues?
+            *What is wall following?
+                *Detects wall
+                *Follows along the wall
+                *Stops when wall ends or obstacle in the way.
+                *Proceed in a new direction to find a new wall to follow.
 
-                break;
-            }
-            //0 is left, 1 is middle, 2 is right
-            //assumes that only one bumper can be pressed at once
+        */
+
+        // How to make robot traverse tight spaces?? Is it ok to just "peek" through them?
+
+        // How to get robot unstuck if it is trapped in a small region of the map?
+
+        // The RGBD camera appears to be innaccurate at longer distances. Can/Should we filter them out?
+        // How to filter out faulty sensor readings from camera?
+
+        /*****
+        What should our control method look like?
+        Not talking about PID; I mean high-level control
+
+        - Behaviour-Based Control
+            *Define behaviours such as wall-following, wall-searching, and recover position.
+            *Define states such as Near Wall, Near End of Wall, and Stuck
+            *Trigger the behaviours based on states.
+            *Decision points will allow us to use planning.
+
+        - Deliberative Control
+            *The problem with deliberative control is that we can't sense the goal right away.
+            *Need some hybrid approach to gather readings before we deliberately plan how we move.
+
+        - Reactive
+            *The problem with reactive control is that it is inflexible and can't adapt easily.
+            *Need a base minimum level of planning to allow the robot to escape bad situations.
+
+        - Hybrid (Random Walk with Planning)
+            *Hybrid compromises the weaknesses of deliberative and reactive control.
+            *After constructing a decent map, switch to planned navigation.
+
+        *****/
+        /*****
+        Behaviours
+
+        --- Wall-following ---
+        *Triggers when Near Wall
+        *Also requires minLaserDist > laser_min_dist and !anybumperpressed.
+
+        Ideas:
+        //You want to travel along the wall until the end of the wall is reached.
+        //How to detect end of wall?
+        //How to travel straight and keep a certain distance from wall?
+
+        Behaviour Start:
+        -> When near wall, choose which direction to follow.
+        -> While following the wall, maintain constant distance.
+        -> Look for these: another wall coming up, edge of wall being followed.
+        -> Stop when Near End of Wall is triggered. 
         
-        }
-        ROS_INFO("bumper %i was pressed ",which_bumper_pressed);    
+
+        --- Wall-searching ---
+        *Triggers when Near End of Wall
+        *Also requires minLaserDist > laser_min_dist and !anybumperpressed.
         
+        Ideas:
+        //You want to look for a new wall when you reach end of wall. Where are they found?
+          Free Spaces
+          
+        Behaviour Start:
+        -> Scan the environment for free spaces
+        -> Decide which free space to go to if there is more than one.
+        -> Turn robot to face the free space, travel towards free space.
+        -> Stop when Near Wall is triggered.
+
         
+        --- Recovery ---
+        *Triggers when Stuck
+        *Also requires minLaserDist > laser_min_dist and !anybumperpressed.
+      
+        Ideas:
+        //You want to recover the robot to a location where it can go somewhere else.
+
+        Behaviour Start:
+        -> Stop the robot
+        -> Think of a new plan to reach outside the immediate area.
+        -> Navigate towards outside area
+
+        *****/
+
         // States of the robot
         // ** IMPORTANT: If something is too close to sensor, it will not be detected!
         // True if path in front of robot has enough space to move into.
-        bool is_way_clear = (minLaserDist > laser_min_dist); //robot has deadzone between 0.5 and 4.5meters
+        bool is_way_clear = (minLaserDist > laser_min_dist);
         bool near_wall;
         bool near_end_of_wall;
         bool is_stuck;
@@ -303,63 +392,24 @@ int main(int argc, char **argv)
             //Stone-Skipping Function
 
         }
-
-       
         
-        //drive foward 
         if (is_way_clear && !any_bumper_pressed) {
             // Execute movement
             angular = 0.0;
             linear = 0.4;
         }
 
-        if (){
-
-        }
-
-        //what defines if way is clear?
-        //minLaserDist > laser_min_dist
-        //Section 2: only activates if a bumper is hit
-        else if (any_bumper_pressed) {
-            
-            //Case 1: left bumper is hit
-            if(which_bumper_pressed==0){
-                rotate(DEG2RAD(-30)); //rotate clockwise ie negative angle
-                vel.angular.z = 0;
-                vel.linear.x = 0;
-            }
-            //Case 2: middle bumper is hit
-            else if(which_bumper_pressed==1){
-                rotate(DEG2RAD(100)); // rotate 100 degrees counter clock wise
-                vel.angular.z = 0;
-                vel.linear.x = 0;
-            }
-
-            //Case 3: right bumper is hit
-            else{
-                vel.angular.z = 0;
-                vel.linear.x = 0;
-                rotate(DEG2RAD(30)); // rotate counter clock wise
-            }
-
-           
-            vel_pub.publish(vel);
-          
-
-        }
-
         else {
-            //probability it turns left 30%
-            // probability it turns right 70%
-            // rotate left 30, rotate right 90
+            //If way is not clear, stop and rotate 30
             vel.angular.z = 0;
             vel.linear.x = 0;
-            rotate(DEG2RAD(30));
-        }
+            vel_pub.publish(vel);
+            rotate(DEG2RAD(30)); // CCW
 
+        }
         if (print_counter>50){ //we want to print once every second, the loop runs 100 times per second
-            //printLaser()
-            ROS_INFO("Position: (%f, %f) Orientation: %f degrees.", posX, posY, yaw, RAD2DEG(yaw));
+            printLaser()
+            //ROS_INFO("Position: (%f, %f) Orientation: %f degrees.", posX, posY, yaw, RAD2DEG(yaw));
             print_counter=0;
         }
         print_counter++;
@@ -367,10 +417,6 @@ int main(int argc, char **argv)
         vel.angular.z = angular;
         vel.linear.x = linear;
         vel_pub.publish(vel);
-
-        // next time work on different brnaches
-        // we normally merge branches
-        // normally work indepdently and merge to main
 
 
 
