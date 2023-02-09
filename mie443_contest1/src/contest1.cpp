@@ -44,33 +44,7 @@ git push origin main
 
 // #include "move_functions.h"
 
-void e_stop(int time) { // why do we have this?
-    ros::NodeHandle nh_custom;
-    ros::Publisher vel_pub_custom = nh_custom.advertise<geometry_msgs::Twist>("cmd_vel_mux/input/teleop", 1);
-    geometry_msgs::Twist vel_forward;
 
-    ros::Subscriber bumper_sub_2 = nh_custom.subscribe("mobile_base/events/bumper", 5, &bumperCallback);
-    ros::Subscriber laser_sub_2 = nh_custom.subscribe("scan", 2, &laserCallback);
-    ros::Subscriber odom_2 = nh_custom.subscribe("odom", 1, &odomCallback);    
-    
-    ros::Rate loop_rate_2(100);
-
-    vel_forward.angular.z = 0;
-    vel_forward.linear.x = 0;
-    vel_forward.linear.y = 0;
-    
-    // Start Timer
-    std::chrono::time_point<std::chrono::system_clock> start;
-    start = std::chrono::system_clock::now();
-    uint64_t secondsElapsed = 0;
-
-    // Stop the robot until secondsElapsed > time
-    while(secondsElapsed < time){
-        vel_pub_custom.publish(vel_forward);
-        secondsElapsed = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now()-start).count();
-    }
-
-}
 /* RANDOM WALK SKELETON
 
 while:
@@ -106,29 +80,56 @@ void move_x_meters(double meters){
     double distance = 0.0;
 
     // Keep moving 
-    while (distance < meters){
-        // Must spin to update odom values
-        ros::spinOnce(); // More efficient way? maybe just ask odom_2 for info
-        // Can we somehow wait here until odom_2 returns a value?
+    if (meters>0){
+        while (distance < meters){
+            // Must spin to update odom values
+            ros::spinOnce(); // More efficient way? maybe just ask odom_2 for info
+            // Can we somehow wait here until odom_2 returns a value?
 
-        distance = sqrt(pow(init_pose[0]-posX,2.0) + pow(init_pose[1]-posY,2.0));
+            distance = sqrt(pow(init_pose[0]-posX,2.0) + pow(init_pose[1]-posY,2.0));
 
-        ROS_INFO("My distance: %f", distance);
-        vel_forward.linear.x=-0.2;
+            ROS_INFO("My distance: %f", distance);
+            vel_forward.linear.x=0.2;
+            vel_pub_custom.publish(vel_forward);
+
+            //Restricts loop rate to 100 Hz
+            loop_rate_2.sleep();
+            // For loop rate 5, distance = 0.345 m, but actual distance travelled = 0.5 m
+            // For loop rate 2, distance = 0.285 m
+            // For loop rate 100
+        }
+
+        // Brake
+        vel_forward.linear.x=0.0;
+        vel_forward.linear.y=0.0;
         vel_pub_custom.publish(vel_forward);
-
-        //Restricts loop rate to 100 Hz
-        loop_rate_2.sleep();
-        // For loop rate 5, distance = 0.345 m, but actual distance travelled = 0.5 m
-        // For loop rate 2, distance = 0.285 m
-        // For loop rate 100
     }
 
-    // Brake
-    vel_forward.linear.x=0.0;
-    vel_forward.linear.y=0.0;
-    vel_pub_custom.publish(vel_forward);
+    if (meters<0){
+        while (distance > meters){
+            // Must spin to update odom values
+            ros::spinOnce(); // More efficient way? maybe just ask odom_2 for info
+            // Can we somehow wait here until odom_2 returns a value?
 
+            distance = -sqrt(pow(init_pose[0]-posX,2.0) + pow(init_pose[1]-posY,2.0));
+
+            ROS_INFO("My distance: %f", distance);
+            vel_forward.linear.x=-0.2;
+            vel_pub_custom.publish(vel_forward);
+
+            //Restricts loop rate to 100 Hz
+            loop_rate_2.sleep();
+            // For loop rate 5, distance = 0.345 m, but actual distance travelled = 0.5 m
+            // For loop rate 2, distance = 0.285 m
+            // For loop rate 100
+        }
+
+        // Brake
+        vel_forward.linear.x=0.0;
+        vel_forward.linear.y=0.0;
+        vel_pub_custom.publish(vel_forward);
+    }
+        
 }
 
 void rotate(double desired_angle)
@@ -156,7 +157,7 @@ void rotate(double desired_angle)
         // Must spin to update odom values
         ros::spinOnce(); // More efficient way? maybe just ask odom_2 for info
         
-        angle = yaw - old_yaw;
+         angle = (double) yaw - (double) old_yaw;
 
         if (angle < 0){
             // Add 360 deg to correct for when robot rotates past 0 degrees.
@@ -187,7 +188,7 @@ void rotate(double desired_angle)
 
         }
         else{
-            angle = yaw - old_yaw -2*M_PI;
+            angle = (double) yaw - (double) old_yaw -2*M_PI;
         }
 
 
@@ -258,6 +259,19 @@ int main(int argc, char **argv)
     int print_counter=0;
 
 
+    //////////// 360 Degree Scan Variables ////////////
+    // Initialize distance travelled by robot
+    double dist = 0.0;
+    // Define 360 scan distance increment in m
+    int dist_inc = 1.5;
+    // Initialize distance multiplier for 360 degree scan
+    int dist_mult = 1;
+     // Initialize variables for tracking accumulated distance travelled
+    float prev_x = 0;
+    float prev_y = 0;
+    float accum_distance=0;
+
+
     while(ros::ok() && secondsElapsed <= 480) {
         ros::spinOnce();
         // ROS_INFO("Min Laser: %f", minLaserDist);
@@ -294,43 +308,124 @@ int main(int argc, char **argv)
         bool near_wall;
         bool near_end_of_wall;
         bool is_stuck;
-
+        //Random Walk
+        int rotation_angle = 30;
+        int rotation_direction = 1; //-1 for clockwise
 
         
-        //Trigger 1: Bumper is hit
-        // Behaviour 1: Rotate out
-        if (any_bumper_pressed) {
+        //SECTION :1
+        if (is_way_clear && !any_bumper_pressed) {
+
+            // If the accumulated distance travelled is greater than or equal to a multiple of a specified value
+            if (accum_distance >= dist_inc*dist_mult){
+                // If the distance travelled is greater than or equal to a multiple of a specified value, then 
+                // stop moving, rotate 360 degrees, and increment the distance multiplier
+                linear = 0.0;
+                rotate(DEG2RAD(180));
+                rotate(DEG2RAD(180));
+                dist_mult++;
+            }
+
+            else {
+                angular = 0.0;
+                if (minLaserDist < 1){
+                    // If close to an obstacle, drive slower
+                    linear = 0.1;
+                }
+                else{
+                    // else, drive faster
+                    linear = 0.25;
+                }
+            }
             
+        }
+        //SECTION:2
+        else if (any_bumper_pressed){
+
+            //insert alaa
+
+            vel.angular.z = 0;
+            vel.linear.x = 0;
+            vel_pub.publish(vel);
+
             //Case 1: left bumper is hit
             if(which_bumper_pressed==0){
-                rotate(DEG2RAD(-30)); //rotate clockwise ie negative angle
-                vel.angular.z = 0;
-                vel.linear.x = 0;
+
+                //Rotate to face the wall
+                //rotate(DEG2RAD(60)); //rotate clockwise ie negative angle
+
+                // back off while facing wall
+                move_x_meters(-0.2);
+
+                // Turn back to face previous direction
+                rotate(DEG2RAD(-60)); //rotate clockwise ie negative angle
+
             }
             //Case 2: middle bumper is hit
             else if(which_bumper_pressed==1){
+
+                move_x_meters(-0.1);
                 rotate(DEG2RAD(100)); // rotate 100 degrees counter clock wise
-                vel.angular.z = 0;
-                vel.linear.x = 0;
             }
 
             //Case 3: right bumper is hit
             else{
-                vel.angular.z = 0;
-                vel.linear.x = 0;
-                rotate(DEG2RAD(30)); // rotate counter clock wise
+
+                //rotate(DEG2RAD(-60));
+
+                move_x_meters(-0.2);
+                rotate(DEG2RAD(60)); // rotate counter clock wise
             }
 
+        }
+        //SECTION :3
+        else {
 
+            //Run RANDOM TURN
+            //if the shortest distance is in the middle (ie, robot is roughly perpendicular to wall) 
+
+            if(laser_min_index>(int)nLasers/5 && laser_min_index<(int)nLasers*4/5){
+                // greater than 12 degrees less than 48 degrees then the min distance is in the center
+            
+                //probability generator that picks right or left
+                int random_bool=rand()%2; //returns 0 or 1 as an integer
+                ROS_INFO("boolean is %i",random_bool);
+            
+                //if random_bool is 0, turn left 90
+                if (random_bool==0){
+                    rotate(DEG2RAD(90))
+                }
+
+                //turn right 90
+                else {
+                    rotate(DEG2RAD(-90))
+                }
+
+            }
+
+            //RUN SHIMMY
+            else{
+                    //If way is not clear, stop and rotate 30
+                // First check if there is open space on the left and if there is more than on right side
+                if (laser_min_index < (int)nLasers/5){ // slightly less than max possible counts
+                    rotation_direction = -1;
+                    rotation_angle = 15;
+                    
+                }
+                else if (laser_min_index > (int)4*nLasers/5){
+                    rotation_direction = 1;
+                    rotation_angle = 15;
+
+                }
+
+            }
+
+           
         }
+           
+
        
-        
-        //drive foward 
-        else if (is_way_clear && !any_bumper_pressed) {
-            // Execute movement
-            angular = 0.0;
-            linear = 0.4;
-        }
+
         
         //if (laser_min_index<(int)nLasers/5 )
         // this gets you the left 12 degrees (60/5)
@@ -338,26 +433,7 @@ int main(int argc, char **argv)
         //number of lasers by default is 639, can be changed
         // each one of these lasers has seperate index
 
-        //Section 1: if the shortest distance is in the middle (ie, robot is roughly perpendicular to wall) 
-        else if (laser_min_index>(int)nLasers/5 && laser_min_index<(int)nLasers*4/5 &&!any_bumper_pressed){
-            // greater than 12 degrees less than 48 degrees then the min distance is in the center
-           
-            //probability generator that picks right or left
-
-                    //int a=random_bool();
-            int random_bool=rand()%2; //returns 0 or 1 as an integer
-            ROS_INFO("boolean is %i",random_bool);
         
-            //if random_bool is 0, turn left 90
-            if (random_bool==0){
-                rotate(DEG2RAD(90))
-            }
-
-            //turn right 90
-            else {
-                rotate(DEG2RAD(-90))
-            }
-        }
 
      
 
@@ -383,112 +459,3 @@ int main(int argc, char **argv)
     return 0;
 }
 
-
-        // // Basic Timer
-        // std::clock_t start2;
-        // double duration;
-        // start2 = std::clock();
-        // while ((std::clock() - start2)/CLOCKS_PER_SEC < 1){
-            
-        //     ROS_INFO("Waited %f Seconds.",(float) (std::clock() - start2)/CLOCKS_PER_SEC);
-
-        // }
-
-        // //
-        // // Check if any of the bumpers were pressed.
-        // bool any_bumper_pressed = false;
-        // for (uint32_t b_idx = 0; b_idx < N_BUMPER; ++b_idx) {
-        // any_bumper_pressed |= (bumper[b_idx] == kobuki_msgs::BumperEvent::PRESSED);
-        // }
-        // //
-        
-        // // Check if any of the bumpers were pressed.
-        // bool any_bumper_pressed = false;
-        // for (uint32_t b_idx = 0; b_idx < N_BUMPER; ++b_idx) {
-        //     any_bumper_pressed |= (bumper[b_idx] == kobuki_msgs::BumperEvent::PRESSED);
-        // }    
-
-        // if (posX < 0.5 && yaw < M_PI / 12 && !any_bumper_pressed && minLaserDist > 0.7) {
-        //     angular = 0.0;
-        //     linear = 0.2;
-        // }
-        // else if (yaw < M_PI / 2 && posX > 0.5 && !any_bumper_pressed && minLaserDist > 0.5) {
-        //     angular = M_PI / 6;
-        //     linear = 0.0;
-        // }
-        // else if (minLaserDist > 1. && !any_bumper_pressed) {
-        //     linear = 0.1;
-        //     if (yaw < 17 / 36 * M_PI || posX > 0.6) {
-        //         angular = M_PI / 12.;
-        //     }
-        //     else if (yaw < 19 / 36 * M_PI || posX < 0.4) {
-        //         angular = -M_PI / 12.;
-        //     }
-        //     else {
-        //         angular = 0;
-        //     }
-        // }
-        // else {
-        //     angular = 0.0;
-        //     linear = 0.0;
-        // }
-
-
-        // // Check if any of the bumpers were pressed.
-        // bool any_bumper_pressed = false;
-        // for (uint32_t b_idx = 0; b_idx < N_BUMPER; ++b_idx) {
-        // any_bumper_pressed |= (bumper[b_idx] == kobuki_msgs::BumperEvent::PRESSED);
-        // }
-        // //
-        // // Control logic after bumpers are being pressed.
-        // if (posX < 0.5 && yaw < M_PI / 12 && !any_bumper_pressed) {
-        //     angular = 0.0;
-        //     linear = 0.2;
-        // }
-        // else if (yaw < M_PI / 2 && posX > 0.5 && !any_bumper_pressed) {
-        //     angular = M_PI / 6;
-        //     linear = 0.0;
-        // }
-        // else {
-        //     angular = 0.0;
-        //     linear = 0.0;
-        // }
-        // vel.angular.z = angular;
-        // vel.linear.x = linear;
-        // vel_pub.publish(vel);
-
-
-
-
-        // SCAN EXAMPLE
-        // ROS_INFO("Postion: (%f, %f) Orientation: %f degrees Range: %f", posX, posY, RAD2DEG(yaw), minLaserDist);
-        // // Check if any of the bumpers were pressed.
-        // bool any_bumper_pressed = false;
-        // for (uint32_t b_idx = 0; b_idx < N_BUMPER; ++b_idx) {
-        //     any_bumper_pressed |= (bumper[b_idx] == kobuki_msgs::BumperEvent::PRESSED);
-        // }    
-
-        // if (posX < 0.5 && yaw < M_PI / 12 && !any_bumper_pressed && minLaserDist > 0.7) {
-        //     angular = 0.0;
-        //     linear = 0.2;
-        // }
-        // else if (yaw < M_PI / 2 && posX > 0.5 && !any_bumper_pressed && minLaserDist > 0.5) {
-        //     angular = M_PI / 6;
-        //     linear = 0.0;
-        // }
-        // else if (minLaserDist > 1. && !any_bumper_pressed) {
-        //     linear = 0.1;
-        //     if (yaw < 17 / 36 * M_PI || posX > 0.6) {
-        //         angular = M_PI / 12.;
-        //     }
-        //     else if (yaw < 19 / 36 * M_PI || posX < 0.4) {
-        //         angular = -M_PI / 12.;
-        //     }
-        //     else {
-        //         angular = 0;
-        //     }
-        // }
-        // else {
-        //     angular = 0.0;
-        //     linear = 0.0;
-        // }
