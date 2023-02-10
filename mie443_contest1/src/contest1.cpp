@@ -367,6 +367,10 @@ int main(int argc, char **argv)
                 }
             }
             
+        
+            // Clear shimmy count if shimmy has not been executed.
+            // shimmy_count=0;
+            
         }
         //SECTION:2
         else if (any_bumper_pressed){
@@ -405,7 +409,12 @@ int main(int argc, char **argv)
                 move_x_meters(-0.2);
                 rotate(DEG2RAD(60)); // rotate counter clock wise
             }
-
+            
+            
+        
+            // Clear shimmy count if shimmy has not been executed.
+            // shimmy_count = 0;
+            
         }
         //SECTION :3
         else {
@@ -433,11 +442,26 @@ int main(int argc, char **argv)
                     num_randomrights++;
     
                 }
-
+                
+                
+        
+                // Clear shimmy count if shimmy has not been executed.
+                // shimmy_count = 0;
             }
 
             //RUN SHIMMY
             else{
+                // Check if stuck. Continue if not.
+                // if (shimmy_count > 5){
+                //     ROS_INFO("Shimmy count: %i", shimmy_count);
+                //     if (accum_distance - stuck_distance < 0.3){
+                //         // Recovery
+                //         ROS_INFO("Executing Recovery");
+                //         rotate(DEG2RAD(180));
+
+                //     }
+                // }
+                
                     //If way is not clear, stop and rotate 30
                 // First check if there is open space on the left and if there is more than on right side
                 if (laser_min_index < (int)nLasers/5){ // slightly less than max possible counts
@@ -463,15 +487,7 @@ int main(int argc, char **argv)
                 // // Recovery Code
                 // shimmy_count +=1;
 
-                // if (shimmy_count%5 == 0){
-                //     ROS_INFO("Shimmy count: %i", shimmy_count);
-                //     if (accum_distance - stuck_distance < 0.3){
-                //         // Recovery
-                //         ROS_INFO("Executing Recovery");
-                //         rotate(DEG2RAD(180));
-
-                //     }
-                // }
+        
 
             }
 
