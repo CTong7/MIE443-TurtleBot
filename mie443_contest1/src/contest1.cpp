@@ -200,7 +200,7 @@ void rotate(double desired_angle)
         ROS_INFO("My angle turned CW: %lf", RAD2DEG(angle));
         
         //Turn clockwise
-        vel_forward.angular.z=-0.3;
+        vel_forward.angular.z=-0.4;
 
         vel_pub_custom.publish(vel_forward);
 
@@ -270,6 +270,8 @@ int main(int argc, char **argv)
     float prev_x = 0;
     float prev_y = 0;
     float accum_distance=0;
+    float stuck_distance = 0.0;
+    int shimmy_count = 0;
 
 
     while(ros::ok() && secondsElapsed <= 480) {
@@ -278,11 +280,21 @@ int main(int argc, char **argv)
         // ROS_INFO("Postion: (%f, %f) Orientation: %f degrees Range: %f", posX, posY, RAD2DEG(yaw), minLaserDist);
         
         // Calculate the accumulated distance travelled
+
         accum_distance += sqrt(pow(prev_x-posX,2.0) + pow(prev_y-posY,2.0));
+
+        // Save accum_distance every 500 loops
+        if (loopCount%500 == 0){
+            
+            stuck_distance = accum_distance;
+        }
+
         prev_x = posX;
         prev_y = posY;
         
         ROS_INFO("Accumulated Distance Travelled: %f", accum_distance);
+        ROS_INFO("Stuck Distance : %f", stuck_distance);
+
         // Check if any of the bumpers were pressed.
         bool any_bumper_pressed = false;
         //for i in range 0,1,2
@@ -417,16 +429,32 @@ int main(int argc, char **argv)
                     //If way is not clear, stop and rotate 30
                 // First check if there is open space on the left and if there is more than on right side
                 if (laser_min_index < (int)nLasers/5){ // slightly less than max possible counts
+                    ROS_INFO("LMI: %i", laser_min_index);
                     rotation_direction = -1;
                     rotation_angle = 15;
-                    rotate(DEG2RAD(rotation_direction*rotation_angle));
+                    rotate(DEG2RAD(15));
                     
                 }
                 else if (laser_min_index > (int)4*nLasers/5){
+                    ROS_INFO("LMI: %i", laser_min_index);
                     rotation_direction = 1;
                     rotation_angle = 15;
-                    rotate(DEG2RAD(rotation_direction*rotation_angle));
+                    rotate(DEG2RAD(-15));
 
+                }
+
+
+                // Recovery Code
+                shimmy_count +=1;
+
+                if (shimmy_count%5 == 0){
+                    ROS_INFO("Shimmy count: %i", shimmy_count);
+                    if (accum_distance - stuck_distance < 0.3){
+                        // Recovery
+                        ROS_INFO("Executing Recovery");
+                        rotate(DEG2RAD(180));
+
+                    }
                 }
 
             }
