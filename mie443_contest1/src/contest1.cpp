@@ -444,18 +444,18 @@ int main(int argc, char **argv)
                 }
 
 
-                // Recovery Code
-                shimmy_count +=1;
+                // // Recovery Code
+                // shimmy_count +=1;
 
-                if (shimmy_count%5 == 0){
-                    ROS_INFO("Shimmy count: %i", shimmy_count);
-                    if (accum_distance - stuck_distance < 0.3){
-                        // Recovery
-                        ROS_INFO("Executing Recovery");
-                        rotate(DEG2RAD(180));
+                // if (shimmy_count%5 == 0){
+                //     ROS_INFO("Shimmy count: %i", shimmy_count);
+                //     if (accum_distance - stuck_distance < 0.3){
+                //         // Recovery
+                //         ROS_INFO("Executing Recovery");
+                //         rotate(DEG2RAD(180));
 
-                    }
-                }
+                //     }
+                // }
 
             }
 
