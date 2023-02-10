@@ -167,7 +167,7 @@ void rotate(double desired_angle)
         ROS_INFO("My angle turned CCW: %lf", RAD2DEG(angle));
         
         //Turn Counterclockwise
-        vel_forward.angular.z=0.4;
+        vel_forward.angular.z=0.5;
 
         vel_pub_custom.publish(vel_forward);
 
@@ -273,6 +273,12 @@ int main(int argc, char **argv)
     float stuck_distance = 0.0;
     int shimmy_count = 0;
 
+    //counting the number of each occurence
+    int num_randomlefts=0;
+    int num_randomrights=0;
+    int num_shimmys=0;
+    int num_rotates=0;
+
 
     while(ros::ok() && secondsElapsed <= 480) {
         ros::spinOnce();
@@ -342,14 +348,16 @@ int main(int argc, char **argv)
                 // If the distance travelled is greater than or equal to a multiple of a specified value, then 
                 // stop moving, rotate 360 degrees, and increment the distance multiplier
                 linear = 0.0;
-                rotate(DEG2RAD(180));
+                rotate(DEG2RAD(180));// built in publish
                 rotate(DEG2RAD(180));
                 dist_mult++;
+
+                num_rotates++;
             }
 
             else {
                 angular = 0.0;
-                if (minLaserDist < 1){
+                if (minLaserDist < 0.55){
                     // If close to an obstacle, drive slower
                     linear = 0.1;
                 }
@@ -415,11 +423,15 @@ int main(int argc, char **argv)
                 //if random_bool is 0, turn left 90
                 if (random_bool==0){
                     rotate(DEG2RAD(90));
+                    num_randomlefts++;
+    
                 }
 
                 //turn right 90
                 else {
                     rotate(DEG2RAD(-90));
+                    num_randomrights++;
+    
                 }
 
             }
@@ -433,6 +445,8 @@ int main(int argc, char **argv)
                     rotation_direction = -1;
                     rotation_angle = 15;
                     rotate(DEG2RAD(15));
+                    num_shimmys++;
+    
                     
                 }
                 else if (laser_min_index > (int)4*nLasers/5){
@@ -440,6 +454,8 @@ int main(int argc, char **argv)
                     rotation_direction = 1;
                     rotation_angle = 15;
                     rotate(DEG2RAD(-15));
+                    num_shimmys++;
+    
 
                 }
 
@@ -489,6 +505,12 @@ int main(int argc, char **argv)
         vel.linear.x = linear;
         vel_pub.publish(vel);
 
+        ROS_INFO("there have been a total of %i 360 rotations",num_rotates);
+        ROS_INFO("there have been a total of %i random left turns",num_randomlefts);
+        ROS_INFO("there have been a total of %i random right turns",num_randomrights);
+        ROS_INFO("there have been a total of %i shimmys",num_shimmys);
+
+    
         // Update the timer.
         secondsElapsed = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now()-start).count();
         loop_rate.sleep();
