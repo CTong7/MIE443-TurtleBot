@@ -57,7 +57,7 @@ void laserCallback(const sensor_msgs::LaserScan::ConstPtr& msg)
         //msg points ot a message object that stores the ranges value
         // this is different than the vel.linear.x, since vel is an object, whereas msg is an object
     }
-    ROS_INFO("the range is %d",msg->ranges);
+    //ROS_INFO("the range is %d",msg->ranges);
 
     //ROS_INFO("Min Laser Dist: %f", minLaserDist);
 

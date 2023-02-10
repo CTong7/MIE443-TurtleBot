@@ -263,7 +263,7 @@ int main(int argc, char **argv)
     // Initialize distance travelled by robot
     double dist = 0.0;
     // Define 360 scan distance increment in m
-    int dist_inc = 1.5;
+    int dist_inc = 3;
     // Initialize distance multiplier for 360 degree scan
     int dist_mult = 1;
      // Initialize variables for tracking accumulated distance travelled
@@ -276,6 +276,13 @@ int main(int argc, char **argv)
         ros::spinOnce();
         // ROS_INFO("Min Laser: %f", minLaserDist);
         // ROS_INFO("Postion: (%f, %f) Orientation: %f degrees Range: %f", posX, posY, RAD2DEG(yaw), minLaserDist);
+        
+        // Calculate the accumulated distance travelled
+        accum_distance += sqrt(pow(prev_x-posX,2.0) + pow(prev_y-posY,2.0));
+        prev_x = posX;
+        prev_y = posY;
+        
+        ROS_INFO("Accumulated Distance Travelled: %f", accum_distance);
         // Check if any of the bumpers were pressed.
         bool any_bumper_pressed = false;
         //for i in range 0,1,2
@@ -307,17 +314,19 @@ int main(int argc, char **argv)
         //laser_mind_dist is defined as 0.5 meters
         bool near_wall;
         bool near_end_of_wall;
-        bool is_stuck;
         //Random Walk
         int rotation_angle = 30;
         int rotation_direction = 1; //-1 for clockwise
+
+        //Recovery Actions
+        bool is_stuck = false;
 
         
         //SECTION :1
         if (is_way_clear && !any_bumper_pressed) {
 
             // If the accumulated distance travelled is greater than or equal to a multiple of a specified value
-            if (accum_distance >= dist_inc*dist_mult){
+            if (accum_distance >= (float) dist_inc*dist_mult){
                 // If the distance travelled is greater than or equal to a multiple of a specified value, then 
                 // stop moving, rotate 360 degrees, and increment the distance multiplier
                 linear = 0.0;
@@ -384,7 +393,7 @@ int main(int argc, char **argv)
             //Run RANDOM TURN
             //if the shortest distance is in the middle (ie, robot is roughly perpendicular to wall) 
 
-            if(laser_min_index>(int)nLasers/5 && laser_min_index<(int)nLasers*4/5){
+            if((laser_min_index > (int) nLasers/5) && (laser_min_index <  (int)nLasers*4/5)){
                 // greater than 12 degrees less than 48 degrees then the min distance is in the center
             
                 //probability generator that picks right or left
@@ -393,12 +402,12 @@ int main(int argc, char **argv)
             
                 //if random_bool is 0, turn left 90
                 if (random_bool==0){
-                    rotate(DEG2RAD(90))
+                    rotate(DEG2RAD(90));
                 }
 
                 //turn right 90
                 else {
-                    rotate(DEG2RAD(-90))
+                    rotate(DEG2RAD(-90));
                 }
 
             }
@@ -410,11 +419,13 @@ int main(int argc, char **argv)
                 if (laser_min_index < (int)nLasers/5){ // slightly less than max possible counts
                     rotation_direction = -1;
                     rotation_angle = 15;
+                    rotate(DEG2RAD(rotation_direction*rotation_angle));
                     
                 }
                 else if (laser_min_index > (int)4*nLasers/5){
                     rotation_direction = 1;
                     rotation_angle = 15;
+                    rotate(DEG2RAD(rotation_direction*rotation_angle));
 
                 }
 
