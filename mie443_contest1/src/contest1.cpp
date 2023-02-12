@@ -277,6 +277,8 @@ int main(int argc, char **argv)
     float accum_distance=0;
     float stuck_distance = 0.0;
     int shimmy_count = 0;
+    bool has_detected_wall = false;
+
 
     //counting the number of each occurence
     int num_randomlefts=0;
@@ -284,6 +286,7 @@ int main(int argc, char **argv)
     int num_shimmys=0;
     int num_rotates=0;
     int num_recoveries =0;
+
 
 
     while(ros::ok() && secondsElapsed <= 480) {
@@ -394,7 +397,8 @@ int main(int argc, char **argv)
             
         
             // Clear shimmy count if shimmy has not been executed.
-             shimmy_count=0;
+            shimmy_count=0;
+            has_detected_wall = false;
             
         }
         //SECTION:2
@@ -439,6 +443,8 @@ int main(int argc, char **argv)
         
             // Clear shimmy count if shimmy has not been executed.
              shimmy_count = 0;
+             //Clear has wall detected if wall has not been detected twice in a row
+             has_detected_wall = false;
             
         }
         //SECTION :3
@@ -450,6 +456,17 @@ int main(int argc, char **argv)
             if((laser_min_index > (int) nLasers/5) && (laser_min_index <  (int)nLasers*4/5)){
                 // greater than 12 degrees less than 48 degrees then the min distance is in the center
             
+                // If has_detected_wall has not been cleared, then turn 180 instead of 90
+                // The robot is in a corner, and this code 
+                // prevents the robot from turning 90 twice in a row (resulting in a 180).
+
+                if (has_detected_wall && minLaserDist < 0.7){
+                    rotate(DEG2RAD(180));
+                    has_detected_wall = false;
+
+                    // Go back to while loop start
+                    continue;
+                }
                 //probability generator that picks right or left
                 int random_bool=rand()%2; //returns 0 or 1 as an integer
                 ROS_INFO("boolean is %i",random_bool);
@@ -468,7 +485,9 @@ int main(int argc, char **argv)
     
                 }
                 
-                
+                // If robot has random turned due to a wall, set this to be true.
+                // On the next loop, if this is still true then the robot is in a corner.
+                has_detected_wall = true;
         
                 //Clear shimmy count if shimmy has not been executed.
                 shimmy_count = 0;
@@ -537,6 +556,8 @@ int main(int argc, char **argv)
 
                 // // Recovery Code
                 shimmy_count +=1;
+
+                has_detected_wall = false;
         
 
             }
