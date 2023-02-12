@@ -157,11 +157,14 @@ void rotate(double desired_angle)
         // Must spin to update odom values
         ros::spinOnce(); // More efficient way? maybe just ask odom_2 for info
         
-         angle = (double) yaw - (double) old_yaw;
+        angle = (double) yaw - (double) old_yaw;
 
-        if (angle < 0){
-            // Add 360 deg to correct for when robot rotates past 0 degrees.
-            angle += 2*M_PI;
+        if ( yaw >= old_yaw){
+            angle = (double) yaw - (double) old_yaw; // yaw always greater than old_yaw when turning CW
+
+        }
+        else{
+            angle = (double) yaw - (double) old_yaw + 2*M_PI;
         }
 
         ROS_INFO("My angle turned CCW: %lf", RAD2DEG(angle));
@@ -183,7 +186,9 @@ void rotate(double desired_angle)
         while (angle > desired_angle){
         // Must spin to update odom values
         ros::spinOnce(); // More efficient way? maybe just ask odom_2 for info
-        if ( yaw < old_yaw){
+
+    
+        if ( yaw <= old_yaw){ // =< so that when yaw == old_yaw, angle doesn't blow up to -360.
             angle = yaw - old_yaw; // yaw always less than old_yaw when turning CW
 
         }
@@ -263,7 +268,7 @@ int main(int argc, char **argv)
     // Initialize distance travelled by robot
     double dist = 0.0;
     // Define 360 scan distance increment in m
-    int dist_inc = 3;
+    int dist_inc = 6;
     // Initialize distance multiplier for 360 degree scan
     int dist_mult = 1;
      // Initialize variables for tracking accumulated distance travelled
@@ -278,6 +283,7 @@ int main(int argc, char **argv)
     int num_randomrights=0;
     int num_shimmys=0;
     int num_rotates=0;
+    int num_recoveries =0;
 
 
     while(ros::ok() && secondsElapsed <= 480) {
@@ -285,21 +291,31 @@ int main(int argc, char **argv)
         // ROS_INFO("Min Laser: %f", minLaserDist);
         // ROS_INFO("Postion: (%f, %f) Orientation: %f degrees Range: %f", posX, posY, RAD2DEG(yaw), minLaserDist);
         
+        /* Problems from sim trial #1:
+        Right and left random turn seem to execute even when nothing is in front of the laser
+        360 rotations sometimes don't complete. They only turn 90 degrees.
+        random 180 degree rotations?
+        Print num shimmy recoveries
+
+        Fixes: changed rotate to be better.
+
+        */ 
+
         // Calculate the accumulated distance travelled
 
         accum_distance += sqrt(pow(prev_x-posX,2.0) + pow(prev_y-posY,2.0));
 
         // Save accum_distance every 500 loops
-        if (loopCount%500 == 0){
+        // if (loopCount%500 == 0){
             
-            stuck_distance = accum_distance;
-        }
+        //     stuck_distance = accum_distance;
+        // }
 
         prev_x = posX;
         prev_y = posY;
         
         ROS_INFO("Accumulated Distance Travelled: %f", accum_distance);
-        ROS_INFO("Stuck Distance : %f", stuck_distance);
+        // ROS_INFO("Stuck Distance : %f", stuck_distance);
 
         // Check if any of the bumpers were pressed.
         bool any_bumper_pressed = false;
@@ -461,6 +477,8 @@ int main(int argc, char **argv)
                     // Recovery Code
                     rotate(DEG2RAD(180));
 
+                    num_recoveries ++;
+
                     
                     //// Complicated Recovery Subroutine
                     // if(laser_center_view_dist < 1.5 && !isinf(laser_center_view_dist)){
@@ -551,7 +569,7 @@ int main(int argc, char **argv)
         ROS_INFO("there have been a total of %i random left turns",num_randomlefts);
         ROS_INFO("there have been a total of %i random right turns",num_randomrights);
         ROS_INFO("there have been a total of %i shimmys",num_shimmys);
-        ROS_INFO("there are %i shimmy_count",shimmy_count);
+        ROS_INFO("there are %i recoveries", num_recoveries);
 
     
         // Update the timer.
