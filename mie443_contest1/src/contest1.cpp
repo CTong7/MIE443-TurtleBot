@@ -348,8 +348,11 @@ int main(int argc, char **argv)
                 // If the distance travelled is greater than or equal to a multiple of a specified value, then 
                 // stop moving, rotate 360 degrees, and increment the distance multiplier
                 linear = 0.0;
-                rotate(DEG2RAD(180));// built in publish
-                rotate(DEG2RAD(180));
+                rotate(DEG2RAD(270));// built in publish
+                //Sleep so that variables has time to catch up
+                ros::Duration(0.5).sleep();
+                //second rotate
+                rotate(DEG2RAD(90));
                 dist_mult++;
 
                 num_rotates++;
@@ -369,7 +372,7 @@ int main(int argc, char **argv)
             
         
             // Clear shimmy count if shimmy has not been executed.
-            // shimmy_count=0;
+             shimmy_count=0;
             
         }
         //SECTION:2
@@ -413,7 +416,7 @@ int main(int argc, char **argv)
             
         
             // Clear shimmy count if shimmy has not been executed.
-            // shimmy_count = 0;
+             shimmy_count = 0;
             
         }
         //SECTION :3
@@ -445,39 +448,63 @@ int main(int argc, char **argv)
                 
                 
         
-                // Clear shimmy count if shimmy has not been executed.
-                // shimmy_count = 0;
+                //Clear shimmy count if shimmy has not been executed.
+                shimmy_count = 0;
             }
 
             //RUN SHIMMY
             else{
-                // Check if stuck. Continue if not.
-                // if (shimmy_count > 5){
-                //     ROS_INFO("Shimmy count: %i", shimmy_count);
-                //     if (accum_distance - stuck_distance < 0.3){
-                //         // Recovery
-                //         ROS_INFO("Executing Recovery");
-                //         rotate(DEG2RAD(180));
 
-                //     }
-                // }
+                // Check if stuck. Continue if not.
+                if (shimmy_count > 10){
+                    
+                    // Recovery Code
+                    rotate(DEG2RAD(180));
+
+                    
+                    //// Complicated Recovery Subroutine
+                    // if(laser_center_view_dist < 1.5 && !isinf(laser_center_view_dist)){
+                    //     rotate(DEG2RAD(180));
+                    // }
+                    
+                    // else if (!isinf(laser_center_view_dist)){ 
+                    //     // If center view dist is large, can proceed to traverse middle path
+
+                    //     // Closed loop control to put robot min laser dist on very far left or right.
+                    //     if(laser_min_index < (int)nLasers/5){
+                    //         rotate(DEG2RAD(7.5));
+                    //     }
+
+                    //     else if (laser_min_index > (int)4*nLasers/5){
+                    //         rotate(DEG2RAD(-7.5));
+                    //     }
+
+                    //     // If path ahead is clear, move forward.
+                        
+
+                    // }
+                    
+
+                
+                }
                 
                     //If way is not clear, stop and rotate 30
                 // First check if there is open space on the left and if there is more than on right side
                 if (laser_min_index < (int)nLasers/5){ // slightly less than max possible counts
                     ROS_INFO("LMI: %i", laser_min_index);
-                    rotation_direction = -1;
-                    rotation_angle = 15;
-                    rotate(DEG2RAD(15));
+                    
+                    rotate(DEG2RAD(7.5)); // Reduced to 7.5 degrees to let the robot
+                    // shimmy through tight spaces
                     num_shimmys++;
     
                     
                 }
                 else if (laser_min_index > (int)4*nLasers/5){
                     ROS_INFO("LMI: %i", laser_min_index);
-                    rotation_direction = 1;
-                    rotation_angle = 15;
-                    rotate(DEG2RAD(-15));
+                    
+                    rotate(DEG2RAD(-7.5));// Reduced to 7.5 degrees to let the robot
+                    // shimmy through tight spaces
+
                     num_shimmys++;
     
 
@@ -485,8 +512,7 @@ int main(int argc, char **argv)
 
 
                 // // Recovery Code
-                // shimmy_count +=1;
-
+                shimmy_count +=1;
         
 
             }
@@ -525,6 +551,7 @@ int main(int argc, char **argv)
         ROS_INFO("there have been a total of %i random left turns",num_randomlefts);
         ROS_INFO("there have been a total of %i random right turns",num_randomrights);
         ROS_INFO("there have been a total of %i shimmys",num_shimmys);
+        ROS_INFO("there are %i shimmy_count",shimmy_count);
 
     
         // Update the timer.

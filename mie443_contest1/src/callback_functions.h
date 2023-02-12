@@ -34,6 +34,7 @@ uint8_t bumper[3] = {kobuki_msgs::BumperEvent::RELEASED, kobuki_msgs::BumperEven
 float minLaserDist = std::numeric_limits<float>::infinity();
 int32_t nLasers=0, desiredNLasers=0, desiredAngle=60, laser_array_size = 639;
 int32_t laser_min_index=320; //set original min to random index
+float laser_center_view_dist = std::numeric_limits<float>::infinity();
 
 float posX = 0.0, posY = 0.0, yaw = 0.0;
 float angular_vel_to_be_published = 0.0;

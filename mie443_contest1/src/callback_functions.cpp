@@ -53,6 +53,7 @@ void laserCallback(const sensor_msgs::LaserScan::ConstPtr& msg)
         }
 
         laser_min_index=mindex;
+        laser_center_view_dist = msg->ranges[nLasers/2];
         //msg-->ranges is a pointer, you want to access the ranges property of the msg object
         //msg points ot a message object that stores the ranges value
         // this is different than the vel.linear.x, since vel is an object, whereas msg is an object
