@@ -148,7 +148,7 @@ void rotate(double desired_angle)
 
     // Take current odom reading
     float old_yaw = yaw;
-    double angle = 0.0; //in Rad.
+    float angle = 0.0; //in Rad.
 
     // Keep moving
     // For CCW
@@ -157,14 +157,14 @@ void rotate(double desired_angle)
         // Must spin to update odom values
         ros::spinOnce(); // More efficient way? maybe just ask odom_2 for info
         
-        angle = (double) yaw - (double) old_yaw;
+        angle = yaw - old_yaw;
 
-        if ( yaw >= old_yaw){
-            angle = (double) yaw - (double) old_yaw; // yaw always greater than old_yaw when turning CW
+        if ( yaw >= old_yaw - DEG2RAD(1)){ // Subtract small angle because yaw sometimes decreases and triggers other condition.
+            angle =  yaw -  old_yaw; // yaw always greater than old_yaw when turning CW
 
         }
         else{
-            angle = (double) yaw - (double) old_yaw + 2*M_PI;
+            angle =  yaw -  old_yaw + 2*M_PI;
         }
 
         ROS_INFO("My angle turned CCW: %lf", RAD2DEG(angle));
@@ -188,12 +188,12 @@ void rotate(double desired_angle)
         ros::spinOnce(); // More efficient way? maybe just ask odom_2 for info
 
     
-        if ( yaw <= old_yaw){ // =< so that when yaw == old_yaw, angle doesn't blow up to -360.
+        if ( yaw <= old_yaw +DEG2RAD(1)){ // =< so that when yaw == old_yaw, angle doesn't blow up to -360.
             angle = yaw - old_yaw; // yaw always less than old_yaw when turning CW
 
         }
         else{
-            angle = (double) yaw - (double) old_yaw -2*M_PI;
+            angle =  yaw -  old_yaw -2*M_PI;
         }
 
 
@@ -300,6 +300,12 @@ int main(int argc, char **argv)
         Fixes: changed rotate to be better.
 
         */ 
+
+       /* Sim trial 2
+       Rotate() is still BUGGED
+
+       
+       */
 
         // Calculate the accumulated distance travelled
 
