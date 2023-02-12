@@ -310,6 +310,12 @@ int main(int argc, char **argv)
        
        */
 
+      /*Sim trial 4
+        it would be nice if our robot could turn in the right direction at corners
+        We want to seek open space. When it is at a corner it should follow the wall and turn according to it.
+      
+      */
+
         // Calculate the accumulated distance travelled
 
         accum_distance += sqrt(pow(prev_x-posX,2.0) + pow(prev_y-posY,2.0));
