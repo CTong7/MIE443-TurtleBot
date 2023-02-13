@@ -320,17 +320,11 @@ int main(int argc, char **argv)
 
         accum_distance += sqrt(pow(prev_x-posX,2.0) + pow(prev_y-posY,2.0));
 
-        // Save accum_distance every 500 loops
-        // if (loopCount%500 == 0){
-            
-        //     stuck_distance = accum_distance;
-        // }
 
         prev_x = posX;
         prev_y = posY;
         
         ROS_INFO("Accumulated Distance Travelled: %f", accum_distance);
-        // ROS_INFO("Stuck Distance : %f", stuck_distance);
 
         // Check if any of the bumpers were pressed.
         bool any_bumper_pressed = false;
@@ -391,7 +385,7 @@ int main(int argc, char **argv)
 
             else {
                 angular = 0.0;
-                if (minLaserDist < 0.55){
+                if (minLaserDist < 0.65){
                     // If close to an obstacle, drive slower
                     linear = 0.1;
                 }
@@ -419,9 +413,6 @@ int main(int argc, char **argv)
             //Case 1: left bumper is hit
             if(which_bumper_pressed==0){
 
-                //Rotate to face the wall
-                //rotate(DEG2RAD(60)); //rotate clockwise ie negative angle
-
                 // back off while facing wall
                 move_x_meters(-0.2);
 
@@ -438,8 +429,6 @@ int main(int argc, char **argv)
 
             //Case 3: right bumper is hit
             else{
-
-                //rotate(DEG2RAD(-60));
 
                 move_x_meters(-0.2);
                 rotate(DEG2RAD(60)); // rotate counter clock wise
@@ -510,30 +499,6 @@ int main(int argc, char **argv)
 
                     num_recoveries ++;
 
-                    
-                    //// Complicated Recovery Subroutine
-                    // if(laser_center_view_dist < 1.5 && !isinf(laser_center_view_dist)){
-                    //     rotate(DEG2RAD(180));
-                    // }
-                    
-                    // else if (!isinf(laser_center_view_dist)){ 
-                    //     // If center view dist is large, can proceed to traverse middle path
-
-                    //     // Closed loop control to put robot min laser dist on very far left or right.
-                    //     if(laser_min_index < (int)nLasers/5){
-                    //         rotate(DEG2RAD(7.5));
-                    //     }
-
-                    //     else if (laser_min_index > (int)4*nLasers/5){
-                    //         rotate(DEG2RAD(-7.5));
-                    //     }
-
-                    //     // If path ahead is clear, move forward.
-                        
-
-                    // }
-                    
-
                 
                 }
                 
@@ -545,7 +510,6 @@ int main(int argc, char **argv)
                     rotate(DEG2RAD(7.5)); // Reduced to 7.5 degrees to let the robot
                     // shimmy through tight spaces
                     num_shimmys++;
-    
                     
                 }
                 else if (laser_min_index > (int)4*nLasers/5){
