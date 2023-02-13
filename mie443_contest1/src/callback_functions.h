@@ -8,6 +8,7 @@
 #include <sensor_msgs/LaserScan.h>
 #include <stdio.h>
 #include <cmath>
+#include <math.h>
 #include <chrono>
 #include <iostream>
 #include <cstdio>
@@ -32,7 +33,7 @@ uint8_t bumper[3] = {kobuki_msgs::BumperEvent::RELEASED, kobuki_msgs::BumperEven
 
 // Added for LASER demo
 float minLaserDist = std::numeric_limits<float>::infinity();
-int32_t nLasers=0, desiredNLasers=0, desiredAngle=60, laser_array_size = 639;
+int32_t nLasers=0, desiredNLasers=0, desiredAngle=120, laser_array_size = 639;
 int32_t laser_min_index=320; //set original min to random index
 float laser_center_view_dist = std::numeric_limits<float>::infinity();
 
