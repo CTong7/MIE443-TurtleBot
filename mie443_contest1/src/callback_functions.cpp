@@ -1,10 +1,7 @@
-// #ifndef CALLBACKS // Do I need to do this? I have #ifndef in callback_functions.h already
-// #define CALLBACKS // If i have function prototypes in a header file, do I still need to ifndef the implementations?
-// Maybe I don't, but I am a little suspicious of my #include callback_functions.cpp line in contest1.cpp
-#include "callback_functions.h"
-// TODO: Use #ifndef
 
-// SECOND EXAMPLE: Bumper
+#include "callback_functions.h"
+
+
 void bumperCallback(const kobuki_msgs::BumperEvent::ConstPtr& msg)
 {
 	//fill with your code
@@ -86,7 +83,6 @@ void laserCallback(const sensor_msgs::LaserScan::ConstPtr& msg)
 
 }
 
-// FIRST EXAMPLE: Odom
 void odomCallback (const nav_msgs::Odometry::ConstPtr& msg)
 {
     // // //fill with your code
@@ -100,8 +96,3 @@ void odomCallback (const nav_msgs::Odometry::ConstPtr& msg)
     // tf::getYaw(msg->pose.pose.orientation);
     //ROS_INFO("Position: (%f, %f) Orientation: %f rad or %f degrees.", posX, posY, yaw, RAD2DEG(yaw));
 }
-// #endif
-
-//create a funciton that prints linear and angular velcoity
-//create a funciton that prints laser readings
-//create a funciotn that prints bumpers
