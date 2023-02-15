@@ -2,7 +2,7 @@
 
 This repository contains our source code for our exploration and mapping algorithm for the Contest 1 of MIE443. 
 
-#How to Use
+### How to Use
 To use this repository, clone it into the src folder of your catkin workspace and then do:
 
 ```
