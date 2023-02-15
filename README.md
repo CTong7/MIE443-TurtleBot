@@ -7,10 +7,10 @@ To use this repository, clone it into the src folder of your catkin workspace an
 
 ```
 catkin_make
-source devel/setup.bash.
+source devel/setup.bash
 ```
 
 Then to run it, do:
 ```
-rosrun mie443_contest1 contest1.
+rosrun mie443_contest1 contest1
 ```
