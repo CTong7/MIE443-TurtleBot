@@ -258,7 +258,7 @@ int main(int argc, char **argv)
     float angular = 0.0;
     float linear = 0.0;
     // ** IMPORTANT: If something is too close to sensor, it will not be detected!
-    float laser_min_dist = 0.5; // At least 0.5
+    float laser_min_dist = 0.6; // At least 0.5
 
     int loopCount=0;
     int print_counter=0;
