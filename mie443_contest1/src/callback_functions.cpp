@@ -58,8 +58,10 @@ void laserCallback(const sensor_msgs::LaserScan::ConstPtr& msg)
 
                 if (msg->ranges[laser_idx] < dist_compare){
                     mindex=laser_idx;
+                    dist_compare = msg->ranges[laser_idx];
+
                     
-                    // ROS_INFO("Minimum Index: %i", mindex);
+                    //ROS_INFO("Minimum Index: %i", mindex);
                 }
             }
 

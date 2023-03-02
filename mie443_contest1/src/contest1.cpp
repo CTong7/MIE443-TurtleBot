@@ -279,7 +279,6 @@ int main(int argc, char **argv)
     int shimmy_count = 0;
     bool has_detected_wall = false;
 
-
     //counting the number of each occurence
     int num_randomlefts=0;
     int num_randomrights=0;
@@ -444,11 +443,12 @@ int main(int argc, char **argv)
         }
         //SECTION :3
         else {
-
+            ROS_INFO("Laser Min Index: %i", laser_min_index);
+            ROS_INFO("Lower : %i",(int) nLasers/10);
             //Run RANDOM TURN
             //if the shortest distance is in the middle (ie, robot is roughly perpendicular to wall) 
 
-            if((laser_min_index > (int) nLasers/5) && (laser_min_index <  (int)nLasers*4/5)){
+            if((laser_min_index > (int) nLasers/10) && (laser_min_index <  (int)nLasers*9/10)){ //6 degrees shimmy = 6/60 * nLasers
                 // greater than 12 degrees less than 48 degrees then the min distance is in the center
             
                 // If has_detected_wall has not been cleared, then turn 180 instead of 90
@@ -504,16 +504,17 @@ int main(int argc, char **argv)
                 
                     //If way is not clear, stop and rotate 30
                 // First check if there is open space on the left and if there is more than on right side
-                if (laser_min_index < (int)nLasers/5){ // slightly less than max possible counts
-                    ROS_INFO("LMI: %i", laser_min_index);
+                if (laser_min_index < (int)nLasers/10){ // slightly less than max possible counts
+                ROS_INFO("LMI Less than: %i", laser_min_index);
+
                     
                     rotate(DEG2RAD(7.5)); // Reduced to 7.5 degrees to let the robot
                     // shimmy through tight spaces
                     num_shimmys++;
                     
                 }
-                else if (laser_min_index > (int)4*nLasers/5){
-                    ROS_INFO("LMI: %i", laser_min_index);
+                else if (laser_min_index > (int)nLasers*9/10){
+                    ROS_INFO("LMI Greater than: %i", laser_min_index);
                     
                     rotate(DEG2RAD(-7.5));// Reduced to 7.5 degrees to let the robot
                     // shimmy through tight spaces
