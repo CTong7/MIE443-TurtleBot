@@ -1,21 +1,3 @@
-/*  Launch Commands
-
-Gazebo:
-roslaunch mie443_contest2 turtlebot_world.launch world:=1
-
-AMCL:
-roslaunch turtlebot_gazebo amcl_demo.launch map_file:=/home/catkin_ws/src/mie443_contest2/maps/map_1.yaml
-
-Rviz:
-roslaunch turtlebot_rviz_launchers view_navigation.launch
-
-Contest 2:
-
-
-
-*/
-
-
 #include <boxes.h>
 #include <navigation.h>
 #include <robot_pose.h>
@@ -54,9 +36,6 @@ int main(int argc, char** argv) {
         /***YOUR CODE HERE***/
         // Use: boxes.coords
         // Use: robotPose.x, robotPose.y, robotPose.phi
-
-        Navigation::moveToGoal(10,10,10);
-
         imagePipeline.getTemplateID(boxes);
         ros::Duration(0.01).sleep();
     }
