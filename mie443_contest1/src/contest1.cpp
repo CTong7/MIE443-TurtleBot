@@ -159,7 +159,7 @@ void rotate(double desired_angle)
         
         angle = yaw - old_yaw;
 
-        if ( yaw >= old_yaw - DEG2RAD(1)){ // Subtract small angle because yaw sometimes decreases and triggers other condition.
+        if ( yaw >= old_yaw - DEG2RAD(1)){ // Subtract small angle because yaw sometimes decreases and triggers else condition.
             angle =  yaw -  old_yaw; // yaw always greater than old_yaw when turning CW
 
         }
