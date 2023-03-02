@@ -159,7 +159,7 @@ void rotate(double desired_angle)
         
         angle = yaw - old_yaw;
 
-        if ( yaw >= old_yaw - DEG2RAD(1)){ // Subtract small angle because yaw sometimes decreases and triggers else condition.
+        if ( yaw >= old_yaw - DEG2RAD(1)){ // Subtract small angle because yaw sometimes decreases and triggers other condition.
             angle =  yaw -  old_yaw; // yaw always greater than old_yaw when turning CW
 
         }
@@ -258,7 +258,7 @@ int main(int argc, char **argv)
     float angular = 0.0;
     float linear = 0.0;
     // ** IMPORTANT: If something is too close to sensor, it will not be detected!
-    float laser_min_dist = 0.6; // At least 0.5
+    float laser_min_dist = 0.5; // At least 0.5
 
     int loopCount=0;
     int print_counter=0;
@@ -364,176 +364,7 @@ int main(int argc, char **argv)
         //Recovery Actions
         bool is_stuck = false;
 
-        
-        //SECTION :1
-        if (is_way_clear && !any_bumper_pressed) {
-
-            // If the accumulated distance travelled is greater than or equal to a multiple of a specified value
-            if (accum_distance >= (float) dist_inc*dist_mult){
-                // If the distance travelled is greater than or equal to a multiple of a specified value, then 
-                // stop moving, rotate 360 degrees, and increment the distance multiplier
-                linear = 0.0;
-                rotate(DEG2RAD(270));// built in publish
-                //Sleep so that variables has time to catch up
-                ros::Duration(0.5).sleep();
-                //second rotate
-                rotate(DEG2RAD(90));
-                dist_mult++;
-
-                num_rotates++;
-            }
-
-            else {
-                angular = 0.0;
-                if (minLaserDist < 0.65){
-                    // If close to an obstacle, drive slower
-                    linear = 0.1;
-                }
-                else{
-                    // else, drive faster
-                    linear = 0.25;
-                }
-            }
-            
-        
-            // Clear shimmy count if shimmy has not been executed.
-            shimmy_count=0;
-            has_detected_wall = false;
-            
-        }
-        //SECTION:2
-        else if (any_bumper_pressed){
-
-            //insert alaa
-
-            vel.angular.z = 0;
-            vel.linear.x = 0;
-            vel_pub.publish(vel);
-
-            //Case 1: left bumper is hit
-            if(which_bumper_pressed==0){
-
-                // back off while facing wall
-                move_x_meters(-0.2);
-
-                // Turn back to face previous direction
-                rotate(DEG2RAD(-40)); //rotate clockwise ie negative angle
-
-            }
-            //Case 2: middle bumper is hit
-            else if(which_bumper_pressed==1){
-
-                move_x_meters(-0.1);
-                rotate(DEG2RAD(90)); // rotate 100 degrees counter clock wise
-            }
-
-            //Case 3: right bumper is hit
-            else{
-
-                move_x_meters(-0.2);
-                rotate(DEG2RAD(40)); // rotate counter clock wise
-            }
-            
-            
-        
-            // Clear shimmy count if shimmy has not been executed.
-             shimmy_count = 0;
-             //Clear has wall detected if wall has not been detected twice in a row
-             has_detected_wall = false;
-            
-        }
-        //SECTION :3
-        else {
-
-            //Run RANDOM TURN
-            //if the shortest distance is in the middle (ie, robot is roughly perpendicular to wall) 
-
-            if((laser_min_index > (int) nLasers/5) && (laser_min_index <  (int)nLasers*4/5)){
-                // greater than 12 degrees less than 48 degrees then the min distance is in the center
-            
-                // If has_detected_wall has not been cleared, then turn 180 instead of 90
-                // The robot is in a corner, and this code 
-                // prevents the robot from turning 90 twice in a row (resulting in a 180).
-
-                if (has_detected_wall && minLaserDist < 0.7){
-                    rotate(DEG2RAD(180));
-                    has_detected_wall = false;
-                    num_randomlefts++;
-                    // Go back to while loop start
-                    continue;
-                }
-                //probability generator that picks right or left
-                int random_bool=rand()%2; //returns 0 or 1 as an integer
-                ROS_INFO("boolean is %i",random_bool);
-            
-                //if random_bool is 0, turn left 90
-                if (random_bool==0){
-                    rotate(DEG2RAD(90));
-                    num_randomlefts++;
     
-                }
-
-                //turn right 90
-                else {
-                    rotate(DEG2RAD(-90));
-                    num_randomrights++;
-    
-                }
-                
-                // If robot has random turned due to a wall, set this to be true.
-                // On the next loop, if this is still true then the robot is in a corner.
-                has_detected_wall = true;
-        
-                //Clear shimmy count if shimmy has not been executed.
-                shimmy_count = 0;
-            }
-
-            //RUN SHIMMY
-            else{
-
-                // Check if stuck. Continue if not.
-                if (shimmy_count > 10){
-                    
-                    // Recovery Code
-                    rotate(DEG2RAD(180));
-
-                    num_recoveries ++;
-
-                
-                }
-                
-                    //If way is not clear, stop and rotate 30
-                // First check if there is open space on the left and if there is more than on right side
-                if (laser_min_index < (int)nLasers/5){ // slightly less than max possible counts
-                    ROS_INFO("LMI: %i", laser_min_index);
-                    
-                    rotate(DEG2RAD(7.5)); // Reduced to 7.5 degrees to let the robot
-                    // shimmy through tight spaces
-                    num_shimmys++;
-                    
-                }
-                else if (laser_min_index > (int)4*nLasers/5){
-                    ROS_INFO("LMI: %i", laser_min_index);
-                    
-                    rotate(DEG2RAD(-7.5));// Reduced to 7.5 degrees to let the robot
-                    // shimmy through tight spaces
-
-                    num_shimmys++;
-    
-
-                }
-
-
-                // // Recovery Code
-                shimmy_count +=1;
-
-                has_detected_wall = false;
-        
-
-            }
-
-           
-        }
            
 
        
@@ -558,15 +389,12 @@ int main(int argc, char **argv)
 
 
         //Publish velocities
-        vel.angular.z = angular;
-        vel.linear.x = linear;
-        vel_pub.publish(vel);
+        // vel.angular.z = angular;
+        // vel.linear.x = linear;
+        // vel_pub.publish(vel);
 
-        ROS_INFO("there have been a total of %i 360 rotations",num_rotates);
-        ROS_INFO("there have been a total of %i random left turns",num_randomlefts);
-        ROS_INFO("there have been a total of %i random right turns",num_randomrights);
-        ROS_INFO("there have been a total of %i shimmys",num_shimmys);
-        ROS_INFO("there are %i recoveries", num_recoveries);
+        ROS_INFO("Laser Min Index %i 360 rotations",laser_min_index);
+        ROS_INFO("Laser Min Dist %f random left turns",laser_min_dist);
 
     
         // Update the timer.

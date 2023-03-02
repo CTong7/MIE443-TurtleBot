@@ -1,10 +1,7 @@
-// #ifndef CALLBACKS // Do I need to do this? I have #ifndef in callback_functions.h already
-// #define CALLBACKS // If i have function prototypes in a header file, do I still need to ifndef the implementations?
-// Maybe I don't, but I am a little suspicious of my #include callback_functions.cpp line in contest1.cpp
-#include "callback_functions.h"
-// TODO: Use #ifndef
 
-// SECOND EXAMPLE: Bumper
+#include "callback_functions.h"
+
+
 void bumperCallback(const kobuki_msgs::BumperEvent::ConstPtr& msg)
 {
 	//fill with your code
@@ -33,27 +30,48 @@ void laserCallback(const sensor_msgs::LaserScan::ConstPtr& msg)
     // If true, cut out unnecessary laser scanner readings
     if (desiredAngle * M_PI / 180 < msg->angle_max && -desiredAngle * M_PI / 180 > msg->angle_min) {
         for (uint32_t laser_idx = nLasers / 2 - desiredNLasers; laser_idx < nLasers / 2 + desiredNLasers; ++laser_idx){
-            if (!std::isinf(msg->ranges[laser_idx])){
+            if (!std::isinf(msg->ranges[laser_idx]) && !isnan(msg->ranges[laser_idx])){
                 minLaserDist = std::min(minLaserDist, msg->ranges[laser_idx]);
             }
         }
     }
     else {
         int mindex=0;//andrew
+        float dist_compare = 100.0;
+
 
         for (uint32_t laser_idx = 0; laser_idx < nLasers; ++laser_idx) {
-            minLaserDist = std::min(minLaserDist, msg->ranges[laser_idx]);
+            // ROS_INFO("I enterd the For Loop %i times", laser_idx);
+            // ROS_INFO("Distance is  %f ", msg->ranges[laser_idx]);
+
+            //first iteration of loop ranges[laser_idx]=NaN
+            // therefore if statement will not run
+            //2nd iteration ranges[laser_idx]=2meters
+            // if statement will run
+            // rnages[mindex]=NaN this is true so 2nd if statement runs --> dist_compare=100
+            //if 2meters<100meters -->mindex=laser_idx
+            if (!std::isinf(msg->ranges[laser_idx]) && !isnan(msg->ranges[laser_idx])){
+                minLaserDist = std::min(minLaserDist, msg->ranges[laser_idx]);
+                if(isnan(msg->ranges[mindex])){
+                    dist_compare = 100.0;
+                }
+
+                if (msg->ranges[laser_idx] < dist_compare){
+                    mindex=laser_idx;
+                    
+                    // ROS_INFO("Minimum Index: %i", mindex);
+                }
+            }
 
             //reassign mindex if a smaller is found
-            if (msg->ranges[laser_idx]<msg->ranges[mindex]){
-                mindex=laser_idx;
-
-            }
+            
 
         }
 
         laser_min_index=mindex;
         laser_center_view_dist = msg->ranges[nLasers/2];
+        // ROS_INFO("Test Laser Index: %f", msg->ranges[20]);
+        // ROS_INFO("nLasers: %i", nLasers);
         //msg-->ranges is a pointer, you want to access the ranges property of the msg object
         //msg points ot a message object that stores the ranges value
         // this is different than the vel.linear.x, since vel is an object, whereas msg is an object
@@ -65,7 +83,6 @@ void laserCallback(const sensor_msgs::LaserScan::ConstPtr& msg)
 
 }
 
-// FIRST EXAMPLE: Odom
 void odomCallback (const nav_msgs::Odometry::ConstPtr& msg)
 {
     // // //fill with your code
@@ -79,8 +96,3 @@ void odomCallback (const nav_msgs::Odometry::ConstPtr& msg)
     // tf::getYaw(msg->pose.pose.orientation);
     //ROS_INFO("Position: (%f, %f) Orientation: %f rad or %f degrees.", posX, posY, yaw, RAD2DEG(yaw));
 }
-// #endif
-
-//create a funciton that prints linear and angular velcoity
-//create a funciton that prints laser readings
-//create a funciotn that prints bumpers
