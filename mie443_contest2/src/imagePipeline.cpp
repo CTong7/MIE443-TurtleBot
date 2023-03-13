@@ -10,6 +10,7 @@
 #include "opencv2/xfeatures2d.hpp"
 using namespace cv;
 using namespace cv::xfeatures2d;
+using namespace std;
 using std::cout;
 using std::endl;
 
@@ -69,13 +70,11 @@ Output:
         - What is img?
         - Where do we find img_scene (image taken from scene) and img_object (reference image)?
         */
- 
-        // Convert to gray
-        cv::Mat grey_img;
-        cv:cvtColor(img,grey_img,CV_BGR2GRAY);
+        cout<< "Valid Image:" << endl;
 
         // Set object image and scene image
-        Mat img_object = boxes.templates[0];
+        // Image is in grayscale
+        Mat img_object = boxes.templates[2]; // 0 = Raisin Bran, 1 = Cinnamon, 2 = Rice Krispies
         Mat img_scene = img;
 
         //-- Step 1: Detect the keypoints using SURF Detector, compute the
@@ -90,6 +89,71 @@ Output:
 
         detector->detectAndCompute( img_scene, noArray(), keypoints_scene,
         descriptors_scene );
+
+        // Find template id based on matches
+        Ptr<DescriptorMatcher> matcher =
+        DescriptorMatcher::create(DescriptorMatcher::FLANNBASED);
+        std::vector< std::vector<DMatch> > knn_matches;
+        matcher->knnMatch( descriptors_object, descriptors_scene, knn_matches, 2
+        );
+        //-- Filter matches using the Lowe's ratio test
+        const float ratio_thresh = 0.75f;
+
+        std::vector<DMatch> good_matches;
+        for (size_t i = 0; i < knn_matches.size(); i++)
+        {
+            if (knn_matches[i][0].distance < ratio_thresh *
+            knn_matches[i][1].distance)
+            {
+            good_matches.push_back(knn_matches[i][0]);
+            }
+        }
+        // Use Good matches to determine whether or not 2 images are similar
+        // If dissimilar, check other images
+        // If dissimilar to all images, return -1
+        std::cout << good_matches.size() << endl;
+
+        //-- Draw matches
+        Mat img_matches;
+        drawMatches( img_object, keypoints_object, img_scene, keypoints_scene,
+        good_matches, img_matches, Scalar::all(-1),
+        Scalar::all(-1), std::vector<char>(),
+        DrawMatchesFlags::NOT_DRAW_SINGLE_POINTS );
+
+        //-- Localize the object
+        std::vector<Point2f> obj;
+        std::vector<Point2f> scene;
+        for( size_t i = 0; i < good_matches.size(); i++ )
+        {
+        //-- Get the keypoints from the good matches
+        obj.push_back( keypoints_object[ good_matches[i].queryIdx ].pt );
+        scene.push_back( keypoints_scene[ good_matches[i].trainIdx ].pt );
+        }
+
+        Mat H = findHomography( obj, scene, RANSAC );
+
+//-- Get the corners from the image_1 ( the object to be "detected" )
+std::vector<Point2f> obj_corners(4);
+obj_corners[0] = Point2f(0, 0);
+obj_corners[1] = Point2f( (float)img_object.cols, 0 );
+obj_corners[2] = Point2f( (float)img_object.cols, (float)img_object.rows );
+obj_corners[3] = Point2f( 0, (float)img_object.rows );
+std::vector<Point2f> scene_corners(4);
+perspectiveTransform( obj_corners, scene_corners, H);
+
+//-- Draw lines between the corners (the mapped object in the scene - image_2 )
+line( img_matches, scene_corners[0] + Point2f((float)img_object.cols, 0),
+scene_corners[1] + Point2f((float)img_object.cols, 0), Scalar(0, 255, 0), 4 );
+line( img_matches, scene_corners[1] + Point2f((float)img_object.cols, 0),
+scene_corners[2] + Point2f((float)img_object.cols, 0), Scalar( 0, 255, 0), 4 );
+line( img_matches, scene_corners[2] + Point2f((float)img_object.cols, 0),
+scene_corners[3] + Point2f((float)img_object.cols, 0), Scalar( 0, 255, 0), 4 );
+line( img_matches, scene_corners[3] + Point2f((float)img_object.cols, 0),
+scene_corners[0] + Point2f((float)img_object.cols, 0), Scalar( 0, 255, 0), 4 );
+//-- Show detected matches
+imshow("Good Matches & Object detection", img_matches );
+waitKey();
+return 0;
 
     }  
     return template_id;
