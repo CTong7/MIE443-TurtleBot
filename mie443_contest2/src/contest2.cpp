@@ -1,3 +1,17 @@
+/* Launch Code:
+
+Gazebo:
+
+AMCL:
+roslaunch turtlebot_gazebo amcl_demo.launch map_file:=/home/andrew/test/src/MIE443-TurtleBot/mie443_contest2/mie443_contest2/maps/map_1.yaml
+
+RViz:
+
+
+Contest2:
+catkin_make
+
+*/
 #include <boxes.h> //boxes.cpp is what loads gazebo_coords.xml into our contest file, we won't need to modify this EVER
 #include <navigation.h>
 #include <robot_pose.h>
