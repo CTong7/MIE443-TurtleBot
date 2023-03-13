@@ -22,8 +22,8 @@ int main(int argc, char** argv) {
         std::cout << i << " x: " << boxes.coords[i][0] << " y: " << boxes.coords[i][1] << " z: " 
                   << boxes.coords[i][2] << std::endl;
     }
-    // Initialize image objectand subscriber.
-    ImagePipeline imagePipeline(n);
+    // Initialize image object and subscriber.
+    ImagePipeline imagePipeline(n); // Is there a variable/object somewhere that stores the actual image?
 
     // contest count down timer
     std::chrono::time_point<std::chrono::system_clock> start;
@@ -36,7 +36,9 @@ int main(int argc, char** argv) {
         /***YOUR CODE HERE***/
         // Use: boxes.coords
         // Use: robotPose.x, robotPose.y, robotPose.phi
-        imagePipeline.getTemplateID(boxes);
+        int template_id = imagePipeline.getTemplateID(boxes);
+        ROS_INFO("The box is: %i", template_id);
+        
         ros::Duration(0.01).sleep();
     }
     return 0;
