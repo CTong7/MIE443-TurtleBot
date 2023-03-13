@@ -1,4 +1,4 @@
-#include <boxes.h>
+#include <boxes.h> //boxes.cpp is what loads gazebo_coords.xml into our contest file, we won't need to modify this EVER
 #include <navigation.h>
 #include <robot_pose.h>
 #include <imagePipeline.h>
@@ -9,10 +9,18 @@ int main(int argc, char** argv) {
     ros::init(argc, argv, "contest2");
     ros::NodeHandle n;
     // Robot pose object + subscriber.
-    RobotPose robotPose(0,0,0);
+    RobotPose robotPose(0,0,0); //RobotPose is a CLASS, we are creating an object called robotPose which takes in 3 inputs, x,y, yaw
+    //robot pose is set to 0
+
+
     ros::Subscriber amclSub = n.subscribe("/amcl_pose", 1, &RobotPose::poseCallback, &robotPose);
+
     // Initialize box coordinates and templates
-    Boxes boxes; 
+    //loads the location of the boxes from an xml file
+    //load_coords is a BOOLEAN (TRUE OR FLASE)
+    //load_templates is a BOOLEAN
+
+    Boxes boxes; //create a boxes object of class Boxes
     if(!boxes.load_coords() || !boxes.load_templates()) {
         std::cout << "ERROR: could not load coords or templates" << std::endl;
         return -1;
@@ -32,7 +40,9 @@ int main(int argc, char** argv) {
     
     // Execute strategy.
     while(ros::ok() && secondsElapsed <= 300) {
-        ros::spinOnce();
+        ros::spinOnce(); //callback all subscribers
+
+        
         /***YOUR CODE HERE***/
         // Use: boxes.coords
         // Use: robotPose.x, robotPose.y, robotPose.phi
