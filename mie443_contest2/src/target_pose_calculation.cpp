@@ -1,3 +1,4 @@
+#include <nav_msgs/GetPlan.h>
 // Define class for storing target pose of robot
 class target_robot_pose_class{
   public:
@@ -5,12 +6,60 @@ class target_robot_pose_class{
 };
 
 // Target Pose Calculation Function
+float target_object[] = boxes.coords[0]
+float phi = target_object[2]
+
 
 target_robot_pose target_pose(target_object_class target_object){
 
     // Calculate point m_0 for a given object using the object's coordinates
     m_0_x = target_object.object_x + m*cos(phi); // x-coordinate of point m_0
     m_0_y = target_object.object_y + m*sin(phi); // y-coordinate of point m_0
+
+	// Store current robot x,y position
+	start.pose.position.x = robotPose.x;
+	start.pose.position.y = robotPose.y;
+
+	// Enter candidate goal position calculated above
+	goal.pose.position.x = m_i[i][1]; // input goal x coordinate 
+	goal.pose.position.y = m_i[i][2]; // input goal y coordinate
+
+	// Check if point is valid
+    ros::ServiceClient check_path = n.serviceClient<nav_msgs::GetPlan>("/move_base/NavfnROS/make_plan");
+    nav_msgs::GetPlan srv;
+    srv.request.start = start;
+    srv.request.goal = goal;
+    check_path.call(srv);
+
+    if srv.response.plan.poses.size<0;{
+         // Calculate point m_0 for a given object using the object's coordinates
+        m_0_x = target_object.object_x + m*cos(phi+45); // x-coordinate of point m_0
+        m_0_y = target_object.object_y + m*sin(phi+45); // y-coordinate of point m_0
+        // Enter candidate goal position calculated above
+        goal.pose.position.x = m_i[i][1]; // input goal x coordinate 
+        goal.pose.position.y = m_i[i][2]; // input goal y coordinate
+
+        // Check if point is valid
+        ros::ServiceClient check_path = n.serviceClient<nav_msgs::GetPlan>("/move_base/NavfnROS/make_plan");
+        nav_msgs::GetPlan srv;
+        srv.request.start = start;
+        srv.request.goal = goal;
+        check_path.call(srv);
+    }
+    if {srv.response.plan.poses.size<0;{
+         // Calculate point m_0 for a given object using the object's coordinates
+        m_0_x = target_object.object_x + m*cos(phi-45); // x-coordinate of point m_0
+        m_0_y = target_object.object_y + m*sin(phi-45); // y-coordinate of point m_0
+        // Enter candidate goal position calculated above
+        goal.pose.position.x = m_i[i][1]; // input goal x coordinate 
+        goal.pose.position.y = m_i[i][2]; // input goal y coordinate
+
+        // Check if point is valid
+        ros::ServiceClient check_path = n.serviceClient<nav_msgs::GetPlan>("/move_base/NavfnROS/make_plan");
+        nav_msgs::GetPlan srv;
+        srv.request.start = start;
+        srv.request.goal = goal;
+        check_path.call(srv);}
 
     int n = 8; // Specify number of possible search points around this specific m_0
     double D = 0.5; // Specify search diameter around point m_0
@@ -22,22 +71,12 @@ target_robot_pose target_pose(target_object_class target_object){
         m_i[i][1] = m_0_x + D*cos((2*M_PI)/(i+1)); // x-coord of m_i
 	m_i[i][2] = m_0_y + D*sin((2*M_PI)/(i+1)); // y-coord of m_i
 
-	// Check if point is valid
-		
-	// Store current robot x,y position
-	start.pose.position.x = robotPose.x;
-	start.pose.position.y = robotPose.y;
-
-	// Enter candidate goal position calculated above
-	goal.pose.position.x = m_i[i][1]; // input goal x coordinate 
-	goal.pose.position.y = m_i[i][2]; // input goal y coordinate
-
 	// Make request to make_plan service
-    	ros::ServiceClient check_path = n.serviceClient<nav_msgs::GetPlan>("/move_base/NavfnROS/make_plan");
-    	nav_msgs::GetPlan srv;
-    	srv.request.start = start;
-    	srv.request.goal = goal;
-    	check_path.call(srv);
+    ros::ServiceClient check_path = n.serviceClient<nav_msgs::GetPlan>("/move_base/NavfnROS/make_plan");
+    nav_msgs::GetPlan srv;
+    srv.request.start = start;
+    srv.request.goal = goal;
+    check_path.call(srv);
 
     	// Return path reachability
 	// If "srv.response.plan.poses.size()" is > 0, a path can be obtained, so the statement evaluates to "true"
