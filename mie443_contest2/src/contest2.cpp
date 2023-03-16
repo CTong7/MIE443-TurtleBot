@@ -1,6 +1,7 @@
 /* Launch Code:
 
 Gazebo:
+roslaunch mie443_contest2 turtlebot_world.launch world:=1
 
 AMCL:
 roslaunch turtlebot_gazebo amcl_demo.launch map_file:=/home/andrew/test/src/MIE443-TurtleBot/mie443_contest2/maps/map_1.yaml
@@ -62,7 +63,9 @@ int main(int argc, char** argv) {
         /***YOUR CODE HERE***/
         // Use: boxes.coords
         // Use: robotPose.x, robotPose.y, robotPose.phi
+        
         int template_id = imagePipeline.getTemplateID(boxes);
+
         ROS_INFO("The box is: %i", template_id);
         
         ros::Duration(0.01).sleep();

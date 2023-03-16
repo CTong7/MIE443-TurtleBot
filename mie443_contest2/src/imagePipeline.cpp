@@ -157,8 +157,8 @@ Output:
         //-- Draw matches
         Mat img_matches;
         img_object = boxes.templates[max_match_id];
-        img_object.convertTo(img_object_high_contrast, -1, 2, 0);
-        img_object = img_object_high_contrast;
+        // img_object.convertTo(img_object_high_contrast, -1, 2, 0);
+        // img_object = img_object_high_contrast;
 
         drawMatches( img_object, keypoints_object, img_scene, keypoints_scene,
         good_matches, img_matches, Scalar::all(-1),
