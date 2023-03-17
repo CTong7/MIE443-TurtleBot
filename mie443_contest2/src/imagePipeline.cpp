@@ -5,9 +5,12 @@
 #endif
 #include "opencv2/calib3d.hpp"
 #include "opencv2/highgui.hpp"
+#include <opencv2/highgui.hpp>
 #include "opencv2/imgproc.hpp"
 #include "opencv2/features2d.hpp"
 #include "opencv2/xfeatures2d.hpp"
+#include <duration.h>
+
 using namespace cv;
 using namespace cv::xfeatures2d;
 using namespace std;
@@ -85,9 +88,9 @@ Output:
         Mat img_object_high_contrast;
 
         // Call .convertTo on original image.
-        img_scene.convertTo(img_scene_high_contrast, -1, 2, 0); //increase the contrast by 2
+        // img_scene.convertTo(img_scene_high_contrast, -1, 2, 0); //increase the contrast by 2
         // Replace old image
-        img_scene = img_scene_high_contrast;
+        // img_scene = img_scene_high_contrast;
 
         // Display windows
         // String windowNameContrastHigh2 = "Contrast Increased by 2";
@@ -99,7 +102,7 @@ Output:
 
         //-- Step 1: Detect the keypoints using SURF Detector, compute the
         // descriptors
-        int minHessian = 800; //400
+        int minHessian = 400; //400
         Ptr<SURF> detector = SURF::create( minHessian );
         std::vector<KeyPoint> keypoints_object, keypoints_scene;
         Mat descriptors_object, descriptors_scene;
@@ -128,6 +131,7 @@ Output:
         detector->detectAndCompute( img_object, noArray(), keypoints_object,
         descriptors_object );
 
+
         // Find template id based on matches
         Ptr<DescriptorMatcher> matcher =
         DescriptorMatcher::create(DescriptorMatcher::FLANNBASED);
@@ -152,10 +156,15 @@ Output:
         num_good_matches_1 = good_matches.size();
         std::cout << "Num good matches: " << num_good_matches_1 << endl;
         cout << "Box ID : " << box_id <<endl;
-        
+
+        ros::Duration::sleep(500);
+
         // Second Image:
         box_id = 1;
         img_object = boxes.templates[box_id]; // 0 = Raisin Bran, 1 = Cinnamon, 2 = Rice Krispies
+
+        // Clear Good Matches vector
+        good_matches= {};
 
         //-- Step 1: Detect the keypoints using SURF Detector, compute the
         // descriptors
@@ -170,6 +179,8 @@ Output:
         matcher->knnMatch( descriptors_object, descriptors_scene, knn_matches, 2
         );
         
+        
+
         for (size_t i = 0; i < knn_matches.size(); i++)
         {
             if (knn_matches[i][0].distance < ratio_thresh *
@@ -185,11 +196,12 @@ Output:
         num_good_matches_2 = good_matches.size();
         std::cout << "Num good matches: " << num_good_matches_2 << endl;
         cout << "Box ID : " << box_id <<endl;
-
+        waitKey(1000);
         // Third Image:
         box_id = 0;
         img_object = boxes.templates[box_id]; // 0 = Raisin Bran, 1 = Cinnamon, 2 = Rice Krispies
-
+        // Clear vector
+        good_matches= {};
         //-- Step 1: Detect the keypoints using SURF Detector, compute the
         // descriptors
         detector = SURF::create( minHessian );
@@ -219,7 +231,7 @@ Output:
         num_good_matches_3 = good_matches.size();
         std::cout << "Num good matches: " << num_good_matches_3 << endl;
         cout << "Box ID : " << box_id <<endl;
-
+        waitKey(1000);
 
 //         //-- Draw matches
 //         Mat img_matches;
