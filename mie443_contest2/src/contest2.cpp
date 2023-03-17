@@ -63,7 +63,12 @@ int main(int argc, char** argv) {
         /***YOUR CODE HERE***/
         // Use: boxes.coords
         // Use: robotPose.x, robotPose.y, robotPose.phi
-        
+        // float xGoal = boxes.coords[1][0] + 0.5; 
+        // float yGoal = boxes.coords[1][1] + 0.5;
+        // float phiGoal = boxes.coords[1][2];
+
+        // Navigation::moveToGoal(xGoal, yGoal, phiGoal);
+
         int template_id = imagePipeline.getTemplateID(boxes);
 
         ROS_INFO("The box is: %i", template_id);

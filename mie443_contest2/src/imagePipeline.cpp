@@ -112,7 +112,9 @@ Output:
         int max_matches = 0;
         int max_match_id = -1;
         int match_thresh = 60; // smallest number of matches to be considered similar images
-        int num_good_matches;
+        int num_good_matches_1;
+        int num_good_matches_2;
+        int num_good_matches_3;               
         std::vector<DMatch> good_matches;
 
         // First Image:
@@ -147,10 +149,10 @@ Output:
         // Use Good matches to determine whether or not 2 images are similar
         // If dissimilar, check other images
         // If dissimilar to all images, return -1
-        num_good_matches = good_matches.size();
-        std::cout << "Num good matches: " << num_good_matches << endl;
+        num_good_matches_1 = good_matches.size();
+        std::cout << "Num good matches: " << num_good_matches_1 << endl;
         cout << "Box ID : " << box_id <<endl;
-
+        
         // Second Image:
         box_id = 1;
         img_object = boxes.templates[box_id]; // 0 = Raisin Bran, 1 = Cinnamon, 2 = Rice Krispies
@@ -180,8 +182,8 @@ Output:
         // Use Good matches to determine whether or not 2 images are similar
         // If dissimilar, check other images
         // If dissimilar to all images, return -1
-        num_good_matches = good_matches.size();
-        std::cout << "Num good matches: " << num_good_matches << endl;
+        num_good_matches_2 = good_matches.size();
+        std::cout << "Num good matches: " << num_good_matches_2 << endl;
         cout << "Box ID : " << box_id <<endl;
 
         // Third Image:
@@ -214,8 +216,8 @@ Output:
         // Use Good matches to determine whether or not 2 images are similar
         // If dissimilar, check other images
         // If dissimilar to all images, return -1
-        num_good_matches = good_matches.size();
-        std::cout << "Num good matches: " << num_good_matches << endl;
+        num_good_matches_3 = good_matches.size();
+        std::cout << "Num good matches: " << num_good_matches_3 << endl;
         cout << "Box ID : " << box_id <<endl;
 
 
