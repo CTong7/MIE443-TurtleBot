@@ -26,7 +26,7 @@ using std::endl;
 ImagePipeline::ImagePipeline(ros::NodeHandle& n) {
     image_transport::ImageTransport it(n);
     sub = it.subscribe(IMAGE_TOPIC, 1, &ImagePipeline::imageCallback, this);
-    isValid = false;
+    isValid = false; //Why does this trigger?
 }
 
 void ImagePipeline::imageCallback(const sensor_msgs::ImageConstPtr& msg) {
@@ -62,6 +62,7 @@ Output:
     int template_id = -1;
     if(!isValid) {
         std::cout << "ERROR: INVALID IMAGE!" << std::endl;
+        return -3;
     } else if(img.empty() || img.rows <= 0 || img.cols <= 0) {
         std::cout << "ERROR: VALID IMAGE, BUT STILL A PROBLEM EXISTS!" << std::endl;
         std::cout << "img.empty():" << img.empty() << std::endl;

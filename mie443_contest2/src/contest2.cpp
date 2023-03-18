@@ -20,6 +20,9 @@ rosrun mie443_contest2 contest2
 #include <robot_pose.h>
 #include <imagePipeline.h>
 #include <chrono>
+#include <cmath>
+
+using namespace std;
 
 int main(int argc, char** argv) {
     // Setup ROS.
@@ -54,11 +57,20 @@ int main(int argc, char** argv) {
     std::chrono::time_point<std::chrono::system_clock> start;
     start = std::chrono::system_clock::now();
     uint64_t secondsElapsed = 0;
-    
+
+    // Run until Valid images. Still needs some work.
+    // int state = imagePipeline.getTemplateID(boxes);
+    // while(state ==-3){
+    //     state = imagePipeline.getTemplateID(boxes);
+    //     ros::Duration(0.1).sleep();
+
+    // }
+
     // Execute strategy.
     while(ros::ok() && secondsElapsed <= 300) {
         ros::spinOnce(); //callback all subscribers
 
+        
         
         /***YOUR CODE HERE***/
         // Use: boxes.coords
@@ -69,7 +81,30 @@ int main(int argc, char** argv) {
 
         // Navigation::moveToGoal(xGoal, yGoal, phiGoal);
 
-        int template_id = imagePipeline.getTemplateID(boxes);
+        // for (int i =0; i < 5; i++){
+        //     float xGoal = boxes.coords[i][0]; // Distance away/towards the box
+        //     float yGoal = boxes.coords[i][1]; // Distance left/right from the box
+        //     float phiGoal = boxes.coords[i][2];
+
+        //     // Want to move 0.5 m away form face of box
+        //     xGoal += sin(phiGoal)*0.5;
+        //     yGoal += cos(phiGoal)*0.5;
+
+        //     phiGoal += M_PI;
+
+        //     cout << "x : " << xGoal << endl;
+        //     cout << "y : " << yGoal << endl;
+        //     cout << "phi : " << phiGoal << endl;
+
+        //     Navigation::moveToGoal(xGoal, yGoal, phiGoal); 
+        //     int template_id = imagePipeline.getTemplateID(boxes); //How to initalize camera?
+        //     // First few images taken are always Invalid. Need to wait for "Initialized OpenCL Runtime"
+
+        //     ROS_INFO("The box is: %i", template_id);
+        // }
+
+        int template_id = imagePipeline.getTemplateID(boxes); //How to initalize camera?
+            // First few images taken are always Invalid. Need to wait for "Initialized OpenCL Runtime"
 
         ROS_INFO("The box is: %i", template_id);
         
