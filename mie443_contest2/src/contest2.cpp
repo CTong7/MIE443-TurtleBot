@@ -80,7 +80,7 @@ int main(int argc, char** argv) {
         vector<vector<float>> coords {
             {-1.2, 1.5, 2.36},  // rice krispies north
             {0.4, 1, 3.14},  // Toast Krunch
-            {-0.1, 0.1, -1.57},  // Empty Box
+            {-0.107, -0.905, 1.57},  // Empty Box
             {2.4, -0.9, 3.93}, // Rice krispies south 
             {1.9, 1.5, 1.57}, // Raisin bran
             
@@ -88,34 +88,35 @@ int main(int argc, char** argv) {
         // Box 0:
         // Fail -- 
 
-        // Navigation::moveToGoal(xGoal, yGoal, phiGoal);
+
+        vector<int> box_id_visited(3);
 
         for (int i = 0; i < 5; i++){
-            // cout << "Box Num: " << i <<endl;
-            // float xGoal = boxes.coords[i][0]; // Distance away/towards the box
-            // float yGoal = boxes.coords[i][1]; // Distance left/right from the box
-            // float phiGoal = boxes.coords[i][2];
-            // cout << "*****************" <<endl;
-            // cout << "Box Coords: " <<endl;
-            // cout << "x: " << xGoal << endl;
-            // cout << "y: " << yGoal << endl;
-            // cout << "phi: " << phiGoal << endl;
-            // cout << "*****************" <<endl;
-            // // Want to move 0.5 m away form face of box
-            // xGoal += sin(phiGoal)*0.5;
-            // yGoal += cos(phiGoal)*0.5;
+            cout << "Box Num: " << i <<endl;
+            float xGoal = boxes.coords[i][0]; // Distance away/towards the box
+            float yGoal = boxes.coords[i][1]; // Distance left/right from the box
+            float phiGoal = boxes.coords[i][2];
+            cout << "*****************" <<endl;
+            cout << "Box Coords: " <<endl;
+            cout << "x: " << xGoal << endl;
+            cout << "y: " << yGoal << endl;
+            cout << "phi: " << phiGoal << endl;
+            cout << "*****************" <<endl;
+            // Want to move 0.5 m away form face of box
+            xGoal += cos(phiGoal)*0.5;
+            yGoal += sin(phiGoal)*0.5;
 
-            // phiGoal += M_PI;
+            phiGoal += M_PI;
             
-            // cout << "*****************" <<endl;
-            // cout << "x : " << xGoal << endl;
-            // cout << "y : " << yGoal << endl;
-            // cout << "phi : " << phiGoal << endl;
-            // cout << "*****************" <<endl;
+            cout << "*****************" <<endl;
+            cout << "x : " << xGoal << endl;
+            cout << "y : " << yGoal << endl;
+            cout << "phi : " << phiGoal << endl;
+            cout << "*****************" <<endl;
 
-            float xGoal = coords[i][0];
-            float yGoal = coords[i][1];
-            float phiGoal = coords[i][2];
+            // float xGoal = coords[i][0];
+            // float yGoal = coords[i][1];
+            // float phiGoal = coords[i][2];
 
             Navigation::moveToGoal(xGoal, yGoal, phiGoal); 
             ros::spinOnce(); //Get new image
@@ -124,13 +125,23 @@ int main(int argc, char** argv) {
             // First few images taken are always Invalid. Need to wait for "Initialized OpenCL Runtime"
 
             ROS_INFO("The box is: %i", template_id);
+            box_id_visited.push_back(template_id);
         }
         
-        int template_id = imagePipeline.getTemplateID(boxes); //How to initalize camera?
-            // First few images taken are always Invalid. Need to wait for "Initialized OpenCL Runtime"
+        // //Write to text file
+        // ofstream myfile;
+        // myfile.open ("example.txt");
+        // myfile << "Writing this to a file.\n";
 
-        ROS_INFO("The box is: %i", template_id);
-        
+        // for (int i=0; i< box_id_visited.size; i++){
+        //     myfile << "Box ID: " << box_id_visited[i] <<endl;
+        //     myfile << "Box Location: " << box_id_visited[i] <<endl;
+        //     myfile << "Box ID: " << box_id_visited[i] <<endl;
+            
+        // }
+        // myfile.close();
+
+        // break;
         ros::Duration(0.01).sleep();
     }
     return 0;
