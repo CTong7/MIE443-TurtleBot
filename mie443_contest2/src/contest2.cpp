@@ -22,6 +22,7 @@ rosrun mie443_contest2 contest2
 #include <imagePipeline.h>
 #include <chrono>
 #include <cmath>
+#include <fstream>
 
 using namespace std;
 
@@ -72,9 +73,9 @@ int main(int argc, char** argv) {
         ros::spinOnce(); //callback all subscribers
         
         /***YOUR CODE HERE***/
-        // 0 = corner rice krispies, 1 = flat toast crunch
-        // 2 = empty wall, 3 = ??
-        // 4 = ??
+        // 0 = North rice krispies, 1 = Toast crunch
+        // 2 = empty wall, 3 = South Rice Krispies
+        // 4 = Raisin Bran
 
         // Hardcode coordinates
         vector<vector<float>> coords {
@@ -85,11 +86,17 @@ int main(int argc, char** argv) {
             {1.9, 1.5, 1.57}, // Raisin bran
             
         };
-        // Box 0:
-        // Fail -- 
 
-
-        vector<int> box_id_visited(3);
+        vector<int> box_id_visited;
+        // Storing coordinates
+        vector<vector<float>> coords_visited {
+            {},  // rice krispies north
+            {},  // Toast Krunch
+            {},  // Empty Box
+            {}, // Rice krispies south 
+            {}, // Raisin bran
+            
+        };
 
         for (int i = 0; i < 5; i++){
             cout << "Box Num: " << i <<endl;
@@ -119,29 +126,53 @@ int main(int argc, char** argv) {
             // float phiGoal = coords[i][2];
 
             Navigation::moveToGoal(xGoal, yGoal, phiGoal); 
+
+            // Push coords of current box being visited
+            coords_visited[i].push_back(boxes.coords[i][0]);
+            coords_visited[i].push_back(boxes.coords[i][1]);
+            coords_visited[i].push_back(boxes.coords[i][2]);
+
             ros::spinOnce(); //Get new image
             ros::Duration(0.1).sleep(); //wait
             int template_id = imagePipeline.getTemplateID(boxes); //How to initalize camera?
             // First few images taken are always Invalid. Need to wait for "Initialized OpenCL Runtime"
 
             ROS_INFO("The box is: %i", template_id);
+            for (int j = 0; j< box_id_visited.size(); j++){
+                if (box_id_visited[j] == template_id){
+                    template_id+=20;
+                }
+            }
             box_id_visited.push_back(template_id);
         }
         
-        // //Write to text file
-        // ofstream myfile;
-        // myfile.open ("example.txt");
-        // myfile << "Writing this to a file.\n";
+        //Navigation::moveToGoal(0, 0, 0); // Return to starting position
+        //Write to text file
+        ofstream myfile;
+        myfile.open ("box_results.txt",ios::in | ios::out| ios::trunc); //trunc deletes contents of old file before writing.
+        myfile << "CONTEST 2 TEST RESULTS" <<endl;
+        myfile << "======================" <<endl;
+        
+        for (int i=0; i< box_id_visited.size(); i++){
+            myfile << "Box #" << i << ":" <<endl;
 
-        // for (int i=0; i< box_id_visited.size; i++){
-        //     myfile << "Box ID: " << box_id_visited[i] <<endl;
-        //     myfile << "Box Location: " << box_id_visited[i] <<endl;
-        //     myfile << "Box ID: " << box_id_visited[i] <<endl;
-            
-        // }
-        // myfile.close();
+            if (box_id_visited[i] ==-2){
+                myfile << "EMPTY TAG" <<endl;
+            }
 
-        // break;
+            if (box_id_visited[i] > 19){
+                box_id_visited[i] -= 20;
+                myfile << "DUPLICATE TAG OF ID "<<box_id_visited[i] <<endl;
+
+            }
+
+            myfile << "Tag ID: " << box_id_visited[i] <<endl;
+            myfile << "Tag Location: " << "(" <<coords_visited[i][0] << ", "<< coords_visited[i][1] << ", "<< coords_visited[i][2] << ")" <<endl;
+            myfile << endl;            
+        }
+        myfile.close();
+
+        break;
         ros::Duration(0.01).sleep();
     }
     return 0;

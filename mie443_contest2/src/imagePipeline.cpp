@@ -118,7 +118,7 @@ Output:
         int match_array[3];
         int max_match_id = -1;
         int match_thresh = 60; // smallest number of matches to be considered similar images
-        int min_matches = 30;
+        int min_matches = 35;
         int num_good_matches_1;
         int num_good_matches_2;
         int num_good_matches_3;               
@@ -170,7 +170,7 @@ Output:
                 }
             }
 
-            if (max_matches < min_matches) {
+            if (max_matches < min_matches) { //Sometimes this doesn't trigger..
                 cout << "******************"<< endl;
                 cout << "Not enough matches."<< endl;
                 cout << "******************"<< endl;
@@ -216,10 +216,10 @@ Output:
         scene_corners[3] + Point2f((float)img_object.cols, 0), Scalar( 0, 255, 0), 4 );
         line( img_matches, scene_corners[3] + Point2f((float)img_object.cols, 0),
         scene_corners[0] + Point2f((float)img_object.cols, 0), Scalar( 0, 255, 0), 4 );
-        //-- Show detected matches
-        imshow("Good Matches & Object detection", img_matches );
-        waitKey();
-        destroyAllWindows(); //destroy all open windows
+        // //-- Show detected matches
+        // imshow("Good Matches & Object detection", img_matches );
+        // waitKey();
+        // destroyAllWindows(); //destroy all open windows
         return max_match_id;
 
     }
