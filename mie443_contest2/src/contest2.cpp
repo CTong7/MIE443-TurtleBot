@@ -116,6 +116,7 @@ int main(int argc, char** argv) {
             phiGoal += M_PI;
             
             cout << "*****************" <<endl;
+            cout << "Target Pose: " <<endl;
             cout << "x : " << xGoal << endl;
             cout << "y : " << yGoal << endl;
             cout << "phi : " << phiGoal << endl;
@@ -154,7 +155,7 @@ int main(int argc, char** argv) {
         myfile << "======================" <<endl;
         
         for (int i=0; i< box_id_visited.size(); i++){
-            myfile << "Box #" << i << ":" <<endl;
+            myfile << "Box #" << i+1 << ":" <<endl;
 
             if (box_id_visited[i] ==-2){
                 myfile << "EMPTY TAG" <<endl;
