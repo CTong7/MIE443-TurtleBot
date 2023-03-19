@@ -14,6 +14,7 @@ catkin_make
 source devel/setup.bash
 rosrun mie443_contest2 contest2
 
+//This stuff should be a luanch file
 */
 #include <boxes.h> //boxes.cpp is what loads gazebo_coords.xml into our contest file, we won't need to modify this EVER
 #include <navigation.h>
@@ -46,9 +47,9 @@ int main(int argc, char** argv) {
         return -1;
     }
     for(int i = 0; i < boxes.coords.size(); ++i) {
-        std::cout << "Box coordinates: " << std::endl;
-        std::cout << i << " x: " << boxes.coords[i][0] << " y: " << boxes.coords[i][1] << " z: " 
-                  << boxes.coords[i][2] << std::endl;
+        // std::cout << "Box coordinates: " << std::endl;
+        // std::cout << i << " x: " << boxes.coords[i][0] << " y: " << boxes.coords[i][1] << " z: " 
+        //           << boxes.coords[i][2] << std::endl;
     }
     // Initialize image object and subscriber.
     ImagePipeline imagePipeline(n); // Is there a variable/object somewhere that stores the actual image?
@@ -69,40 +70,62 @@ int main(int argc, char** argv) {
     // Execute strategy.
     while(ros::ok() && secondsElapsed <= 300) {
         ros::spinOnce(); //callback all subscribers
-
-        
         
         /***YOUR CODE HERE***/
-        // Use: boxes.coords
-        // Use: robotPose.x, robotPose.y, robotPose.phi
-        // float xGoal = boxes.coords[1][0] + 0.5; 
-        // float yGoal = boxes.coords[1][1] + 0.5;
-        // float phiGoal = boxes.coords[1][2];
+        // 0 = corner rice krispies, 1 = flat toast crunch
+        // 2 = empty wall, 3 = ??
+        // 4 = ??
+
+        // Hardcode coordinates
+        vector<vector<float>> coords {
+            {-1.2, 1.5, 2.36},  // rice krispies north
+            {0.4, 1, 3.14},  // Toast Krunch
+            {-0.1, 0.1, -1.57},  // Empty Box
+            {2.4, -0.9, 3.93}, // Rice krispies south 
+            {1.9, 1.5, 1.57}, // Raisin bran
+            
+        };
+        // Box 0:
+        // Fail -- 
 
         // Navigation::moveToGoal(xGoal, yGoal, phiGoal);
 
-        // for (int i =0; i < 5; i++){
-        //     float xGoal = boxes.coords[i][0]; // Distance away/towards the box
-        //     float yGoal = boxes.coords[i][1]; // Distance left/right from the box
-        //     float phiGoal = boxes.coords[i][2];
+        for (int i = 0; i < 5; i++){
+            // cout << "Box Num: " << i <<endl;
+            // float xGoal = boxes.coords[i][0]; // Distance away/towards the box
+            // float yGoal = boxes.coords[i][1]; // Distance left/right from the box
+            // float phiGoal = boxes.coords[i][2];
+            // cout << "*****************" <<endl;
+            // cout << "Box Coords: " <<endl;
+            // cout << "x: " << xGoal << endl;
+            // cout << "y: " << yGoal << endl;
+            // cout << "phi: " << phiGoal << endl;
+            // cout << "*****************" <<endl;
+            // // Want to move 0.5 m away form face of box
+            // xGoal += sin(phiGoal)*0.5;
+            // yGoal += cos(phiGoal)*0.5;
 
-        //     // Want to move 0.5 m away form face of box
-        //     xGoal += sin(phiGoal)*0.5;
-        //     yGoal += cos(phiGoal)*0.5;
+            // phiGoal += M_PI;
+            
+            // cout << "*****************" <<endl;
+            // cout << "x : " << xGoal << endl;
+            // cout << "y : " << yGoal << endl;
+            // cout << "phi : " << phiGoal << endl;
+            // cout << "*****************" <<endl;
 
-        //     phiGoal += M_PI;
+            float xGoal = coords[i][0];
+            float yGoal = coords[i][1];
+            float phiGoal = coords[i][2];
 
-        //     cout << "x : " << xGoal << endl;
-        //     cout << "y : " << yGoal << endl;
-        //     cout << "phi : " << phiGoal << endl;
+            Navigation::moveToGoal(xGoal, yGoal, phiGoal); 
+            ros::spinOnce(); //Get new image
+            ros::Duration(0.1).sleep(); //wait
+            int template_id = imagePipeline.getTemplateID(boxes); //How to initalize camera?
+            // First few images taken are always Invalid. Need to wait for "Initialized OpenCL Runtime"
 
-        //     Navigation::moveToGoal(xGoal, yGoal, phiGoal); 
-        //     int template_id = imagePipeline.getTemplateID(boxes); //How to initalize camera?
-        //     // First few images taken are always Invalid. Need to wait for "Initialized OpenCL Runtime"
-
-        //     ROS_INFO("The box is: %i", template_id);
-        // }
-
+            ROS_INFO("The box is: %i", template_id);
+        }
+        
         int template_id = imagePipeline.getTemplateID(boxes); //How to initalize camera?
             // First few images taken are always Invalid. Need to wait for "Initialized OpenCL Runtime"
 

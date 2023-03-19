@@ -118,6 +118,7 @@ Output:
         int match_array[3];
         int max_match_id = -1;
         int match_thresh = 60; // smallest number of matches to be considered similar images
+        int min_matches = 30;
         int num_good_matches_1;
         int num_good_matches_2;
         int num_good_matches_3;               
@@ -125,7 +126,7 @@ Output:
 
         detector = SURF::create( minHessian );
 
-        for (int box_id=0; box_id < 3; box_id ++){ // Implement min matches.
+        for (int box_id=0; box_id < 3; box_id ++){
             good_matches= {};
 
             img_object = boxes.templates[box_id]; // 0 = Raisin Bran, 1 = Cinnamon, 2 = Rice Krispies
@@ -169,7 +170,7 @@ Output:
                 }
             }
 
-            if (max_matches < 20) { // Triggers when no images are detected.
+            if (max_matches < min_matches) {
                 cout << "******************"<< endl;
                 cout << "Not enough matches."<< endl;
                 cout << "******************"<< endl;
@@ -218,6 +219,7 @@ Output:
         //-- Show detected matches
         imshow("Good Matches & Object detection", img_matches );
         waitKey();
+        destroyAllWindows(); //destroy all open windows
         return 0;
 
     }
