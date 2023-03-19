@@ -220,7 +220,7 @@ Output:
         imshow("Good Matches & Object detection", img_matches );
         waitKey();
         destroyAllWindows(); //destroy all open windows
-        return 0;
+        return max_match_id;
 
     }
 
