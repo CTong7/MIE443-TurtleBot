@@ -26,7 +26,6 @@ add_executable(contest2
     src/boxes.cpp
     src/navigation.cpp
     src/robot_pose.cpp
-    src/target_pose_calculation.cpp
     src/imagePipeline.cpp)
 
 target_link_libraries(contest2 

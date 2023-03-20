@@ -1,19 +1,14 @@
-#include <target_pose_calculation.h>
+#include <target_pose.h>
 
 using namespace std;
-
-// Define class for storing target pose of robot
-class target_robot_pose_class{
-  public:
-     float robot_x, robot_y, robot_yaw;
-};
-
 
 //custom class called target_robot_pose
 //creating a function called target_pose
 //should just return a vector list of x,y and yaw position
 // INPUT = boxes.coords which is a vector float
-vector<float> target_pose(RobotPose robotPose, vector<float> target_object){
+//bool Navigation::moveToGoal(float xGoal, float yGoal, float phiGoal){
+
+vector<float> targetclass::target_pose(RobotPose robotPose, vector<float> target_object){
     
     //creating points and checking 3 seperate times essentially
     // Calculate point m_0 for a given object using the object's coordinates
