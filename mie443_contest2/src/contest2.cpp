@@ -3,8 +3,14 @@
 Gazebo:
 roslaunch mie443_contest2 turtlebot_world.launch world:=1
 
-AMCL:
+AMCL (Andrew's laptop):
 roslaunch turtlebot_gazebo amcl_demo.launch map_file:=/home/andrew/test/src/MIE443-TurtleBot/mie443_contest2/maps/map_1.yaml
+
+AMCL (Turtlebot Laptop):
+roslaunch turtlebot_gazebo amcl_demo.launch map_file:=/home/thursday2023/catkin_ws/src/MIE443-TurtleBot/mie443_contest2/maps/map_1.yaml
+
+AMCL (Turtlebot Laptop IRL):
+roslaunch turtlebot_gazebo amcl_demo.launch map_file:=/home/thursday2023/catkin_ws/src/MIE443-TurtleBot/mie443_contest2/maps/contest_2.pgm
 
 RViz:
 roslaunch turtlebot_rviz_launchers view_navigation.launch
