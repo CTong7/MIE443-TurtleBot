@@ -24,6 +24,10 @@ rosrun mie443_contest2 contest2
 #include <cmath>
 #include <fstream>
 
+//Srv
+#include <geometry_msgs/PoseStamped.h> // getplan takes gemoetry messages as an input
+#include <nav_msgs/GetPlan.h>
+
 using namespace std;
 
 int main(int argc, char** argv) {
@@ -67,6 +71,19 @@ int main(int argc, char** argv) {
     //     ros::Duration(0.1).sleep();
 
     // }
+    // Save initial Pose
+    vector<float> starting_pose;
+
+    ros::spinOnce();
+    ros::Duration(0.1).sleep();
+    starting_pose.push_back(robotPose.x);
+    starting_pose.push_back(robotPose.y);
+    starting_pose.push_back(robotPose.phi);
+
+    cout << "*********** Starting Pose: **************" <<endl;
+    cout << "x: " <<starting_pose[0] << endl;
+    cout << "y: " <<starting_pose[1] << endl;
+    cout  << "phi: "<<starting_pose[2] <<endl;
 
     // Execute strategy.
     while(ros::ok() && secondsElapsed <= 300) {
@@ -114,6 +131,8 @@ int main(int argc, char** argv) {
             yGoal += sin(phiGoal)*0.5;
 
             phiGoal += M_PI;
+
+            
             
             cout << "*****************" <<endl;
             cout << "Target Pose: " <<endl;
@@ -126,7 +145,99 @@ int main(int argc, char** argv) {
             // float yGoal = coords[i][1];
             // float phiGoal = coords[i][2];
 
+            // Check if path is valid
+
+            //define START VARIABLE
+            geometry_msgs::PoseStamped start;
+            start.header.frame_id="map";
+            start.header.stamp = ros::Time::now();
+            start.pose.position.x=robotPose.x;
+            start.pose.position.y=robotPose.y;
+
+            //define GOAL VARIABLE
+            geometry_msgs::PoseStamped goal;
+            goal.header.frame_id="map";
+            goal.header.stamp = ros::Time::now();
+            goal.pose.position.x=xGoal;
+            goal.pose.position.y=yGoal;
+
+            // Check if point is valid
+            ros::ServiceClient check_path = n.serviceClient<nav_msgs::GetPlan>("/move_base/NavfnROS/make_plan");
+            nav_msgs::GetPlan srv;
+            srv.request.start= start;
+            srv.request.goal=goal;
+            // srv.request.start.pose.position.x=robotPose.x; // Get current position of robot
+            // srv.request.start.pose.position.y=robotPose.y;// Get current position of robot
+            // srv.request.goal.pose.position.x= m_0_x;
+            // srv.request.goal.pose.position.y= m_0_y;
+            check_path.call(srv);
+            if (srv.response.plan.poses.size()>0) {
+                cout << "Path plan successful. Valid Plan exists."<<endl;
+            }
+            
+            else {
+                cout << "Path plan failure. Invalid Plan. Try +30" <<endl;
+                // Check +30
+                xGoal = boxes.coords[i][0]; // Distance away/towards the box
+                yGoal = boxes.coords[i][1]; // Distance left/right from the box
+                phiGoal = boxes.coords[i][2];
+                
+                phiGoal += M_PI/6;
+                xGoal += cos(phiGoal)*0.75;
+                yGoal += sin(phiGoal)*0.75;
+                phiGoal += M_PI;
+
+
+                //define START VARIABLE
+                geometry_msgs::PoseStamped start;
+                start.header.frame_id="map";
+                start.header.stamp = ros::Time::now();
+                start.pose.position.x=robotPose.x;
+                start.pose.position.y=robotPose.y;
+
+                //define GOAL VARIABLE
+                goal.header.frame_id="map";
+                goal.header.stamp = ros::Time::now();
+                goal.pose.position.x=xGoal;
+                goal.pose.position.y=yGoal;
+
+                // Check if point is valid
+                ros::ServiceClient check_path = n.serviceClient<nav_msgs::GetPlan>("/move_base/NavfnROS/make_plan");
+                nav_msgs::GetPlan srv;
+                srv.request.start= start;
+                srv.request.goal=goal;
+                // srv.request.start.pose.position.x=robotPose.x; // Get current position of robot
+                // srv.request.start.pose.position.y=robotPose.y;// Get current position of robot
+                // srv.request.goal.pose.position.x= m_0_x;
+                // srv.request.goal.pose.position.y= m_0_y;
+                check_path.call(srv);
+
+                if (srv.response.plan.poses.size()>0) {
+                    cout << "_+30 Path plan successful. Valid +30 Plan exists."<<endl;
+                }
+
+                else {
+                    // Go with -30. Assume it works
+                    cout << "+30 Path plan failure. Going with -30 Plan."<<endl;
+
+                    xGoal = boxes.coords[i][0]; // Distance away/towards the box
+                    yGoal = boxes.coords[i][1]; // Distance left/right from the box
+                    phiGoal = boxes.coords[i][2];
+                
+                    phiGoal -= M_PI/6;
+                    xGoal += cos(phiGoal)*0.75;
+                    yGoal += sin(phiGoal)*0.75;
+                    phiGoal += M_PI;
+                }
+            
+
+            }
+            
+            
+
+            // Navigate to chosen point
             Navigation::moveToGoal(xGoal, yGoal, phiGoal); 
+        
 
             // Push coords of current box being visited
             coords_visited[i].push_back(boxes.coords[i][0]);
@@ -136,7 +247,6 @@ int main(int argc, char** argv) {
             ros::spinOnce(); //Get new image
             ros::Duration(0.1).sleep(); //wait
             int template_id = imagePipeline.getTemplateID(boxes); //How to initalize camera?
-            // First few images taken are always Invalid. Need to wait for "Initialized OpenCL Runtime"
 
             ROS_INFO("The box is: %i", template_id);
             for (int j = 0; j< box_id_visited.size(); j++){
@@ -147,7 +257,7 @@ int main(int argc, char** argv) {
             box_id_visited.push_back(template_id);
         }
         
-        //Navigation::moveToGoal(0, 0, 0); // Return to starting position
+        Navigation::moveToGoal(starting_pose[0], starting_pose[1], starting_pose[2]); // Return to starting position
         //Write to text file
         ofstream myfile;
         myfile.open ("box_results.txt",ios::in | ios::out| ios::trunc); //trunc deletes contents of old file before writing.
