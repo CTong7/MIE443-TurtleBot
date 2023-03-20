@@ -10,7 +10,7 @@ AMCL (Turtlebot Laptop):
 roslaunch turtlebot_gazebo amcl_demo.launch map_file:=/home/thursday2023/catkin_ws/src/MIE443-TurtleBot/mie443_contest2/maps/map_1.yaml
 
 AMCL (Turtlebot Laptop IRL):
-roslaunch turtlebot_gazebo amcl_demo.launch map_file:=/home/thursday2023/catkin_ws/src/MIE443-TurtleBot/mie443_contest2/maps/contest_2.pgm
+roslaunch turtlebot_navigation amcl_demo.launch map_file:=/home/thursday2023/catkin_ws/src/MIE443-TurtleBot/mie443_contest2/maps/contest_2.pgm
 
 RViz:
 roslaunch turtlebot_rviz_launchers view_navigation.launch
@@ -137,8 +137,6 @@ int main(int argc, char** argv) {
             yGoal += sin(phiGoal)*0.5;
 
             phiGoal += M_PI;
-
-            
             
             cout << "*****************" <<endl;
             cout << "Target Pose: " <<endl;
