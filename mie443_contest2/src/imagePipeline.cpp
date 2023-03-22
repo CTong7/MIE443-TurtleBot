@@ -118,7 +118,7 @@ Output:
         int match_array[3];
         int max_match_id = -1;
         int match_thresh = 60; // smallest number of matches to be considered similar images
-        int min_matches = 35;
+        int min_matches = 50;
         int num_good_matches_1;
         int num_good_matches_2;
         int num_good_matches_3;               
