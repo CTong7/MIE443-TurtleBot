@@ -220,6 +220,12 @@ Output:
         // imshow("Good Matches & Object detection", img_matches );
         // waitKey();
         // destroyAllWindows(); //destroy all open windows
+
+        // If Rice Krispies, check if max matches less than 80.
+        // if less than 80, then it's actually an empty image.
+        if ((max_match_id == 2) && (max_matches < 80)){
+            return -2;
+        }
         return max_match_id;
 
     }

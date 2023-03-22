@@ -275,7 +275,7 @@ int main(int argc, char** argv) {
                 myfile << "EMPTY TAG" <<endl;
             }
 
-            if (box_id_visited[i] > 19){
+            if (box_id_visited[i] > 18){
                 box_id_visited[i] -= 20;
                 myfile << "DUPLICATE TAG OF ID "<<box_id_visited[i] <<endl;
 
