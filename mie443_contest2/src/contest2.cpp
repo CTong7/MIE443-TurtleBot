@@ -10,10 +10,13 @@ AMCL (Turtlebot Laptop):
 roslaunch turtlebot_gazebo amcl_demo.launch map_file:=/home/thursday2023/catkin_ws/src/MIE443-TurtleBot/mie443_contest2/maps/map_1.yaml
 
 AMCL (Turtlebot Laptop IRL):
-roslaunch turtlebot_navigation amcl_demo.launch map_file:=/home/thursday2023/catkin_ws/src/MIE443-TurtleBot/mie443_contest2/maps/contest_2.pgm
+roslaunch turtlebot_navigation amcl_demo.launch map_file:=/home/thursday2023/catkin_ws/src/MIE443-TurtleBot/mie443_contest2/maps/contest2_thurs.yaml
 
 RViz:
 roslaunch turtlebot_rviz_launchers view_navigation.launch
+
+Bringup:
+roslaunch turtlebot_bringup minimal.launch
 
 Contest2:
 catkin_make
@@ -120,79 +123,28 @@ int main(int argc, char** argv) {
             {}, // Raisin bran
             
         };
+        const float deg2Rad = M_PI/180;
 
         for (int i = 0; i < 5; i++){
+
             cout << "Box Num: " << i <<endl;
-            float xGoal = boxes.coords[i][0]; // Distance away/towards the box
-            float yGoal = boxes.coords[i][1]; // Distance left/right from the box
-            float phiGoal = boxes.coords[i][2];
-            cout << "*****************" <<endl;
-            cout << "Box Coords: " <<endl;
-            cout << "x: " << xGoal << endl;
-            cout << "y: " << yGoal << endl;
-            cout << "phi: " << phiGoal << endl;
-            cout << "*****************" <<endl;
-            // Want to move 0.5 m away form face of box
+            bool loop_break = false;
+            bool loop_break2 = false;
+            float xGoal;
+            float yGoal;
+            float phiGoal;
+
+
+            xGoal = boxes.coords[i][0]; // Distance away/towards the box
+            yGoal = boxes.coords[i][1]; // Distance left/right from the box
+            phiGoal = boxes.coords[i][2];
+
+            phiGoal += 0;
             xGoal += cos(phiGoal)*0.5;
             yGoal += sin(phiGoal)*0.5;
-
             phiGoal += M_PI;
-            
-            cout << "*****************" <<endl;
-            cout << "Target Pose: " <<endl;
-            cout << "x : " << xGoal << endl;
-            cout << "y : " << yGoal << endl;
-            cout << "phi : " << phiGoal << endl;
-            cout << "*****************" <<endl;
 
-            // float xGoal = coords[i][0];
-            // float yGoal = coords[i][1];
-            // float phiGoal = coords[i][2];
-
-            // Check if path is valid
-
-            //define START VARIABLE
-            geometry_msgs::PoseStamped start;
-            start.header.frame_id="map";
-            start.header.stamp = ros::Time::now();
-            start.pose.position.x=robotPose.x;
-            start.pose.position.y=robotPose.y;
-
-            //define GOAL VARIABLE
-            geometry_msgs::PoseStamped goal;
-            goal.header.frame_id="map";
-            goal.header.stamp = ros::Time::now();
-            goal.pose.position.x=xGoal;
-            goal.pose.position.y=yGoal;
-
-            // Check if point is valid
-            ros::ServiceClient check_path = n.serviceClient<nav_msgs::GetPlan>("/move_base/NavfnROS/make_plan");
-            nav_msgs::GetPlan srv;
-            srv.request.start= start;
-            srv.request.goal=goal;
-            // srv.request.start.pose.position.x=robotPose.x; // Get current position of robot
-            // srv.request.start.pose.position.y=robotPose.y;// Get current position of robot
-            // srv.request.goal.pose.position.x= m_0_x;
-            // srv.request.goal.pose.position.y= m_0_y;
-            check_path.call(srv);
-            if (srv.response.plan.poses.size()>0) {
-                cout << "Path plan successful. Valid Plan exists."<<endl;
-            }
-            
-            else {
-                cout << "Path plan failure. Invalid Plan. Try +30" <<endl;
-                // Check +30
-                xGoal = boxes.coords[i][0]; // Distance away/towards the box
-                yGoal = boxes.coords[i][1]; // Distance left/right from the box
-                phiGoal = boxes.coords[i][2];
-                
-                phiGoal += M_PI/6;
-                xGoal += cos(phiGoal)*0.75;
-                yGoal += sin(phiGoal)*0.75;
-                phiGoal += M_PI;
-
-
-                //define START VARIABLE
+                    //define START VARIABLE
                 geometry_msgs::PoseStamped start;
                 start.header.frame_id="map";
                 start.header.stamp = ros::Time::now();
@@ -200,6 +152,7 @@ int main(int argc, char** argv) {
                 start.pose.position.y=robotPose.y;
 
                 //define GOAL VARIABLE
+                geometry_msgs::PoseStamped goal;
                 goal.header.frame_id="map";
                 goal.header.stamp = ros::Time::now();
                 goal.pose.position.x=xGoal;
@@ -215,28 +168,183 @@ int main(int argc, char** argv) {
                 // srv.request.goal.pose.position.x= m_0_x;
                 // srv.request.goal.pose.position.y= m_0_y;
                 check_path.call(srv);
-
+                
                 if (srv.response.plan.poses.size()>0) {
-                    cout << "_+30 Path plan successful. Valid +30 Plan exists."<<endl;
+                    cout << "Path plan successful. Valid Plan exists."<<endl;
+                    loop_break2 = true;
+
                 }
+            
+            for (float rad_dist = 0.5; rad_dist < 1; rad_dist += 0.1){
+                
+                if (loop_break2) {
+                    break;
+                }
+                
+                for (float degree = -30.0; degree <= 30.0; degree += 5.0){
 
-                else {
-                    // Go with -30. Assume it works
-                    cout << "+30 Path plan failure. Going with -30 Plan."<<endl;
-
+                    cout<< "Radial: " << rad_dist<<endl;
+                    cout<< "Deg: " << degree <<endl;
                     xGoal = boxes.coords[i][0]; // Distance away/towards the box
                     yGoal = boxes.coords[i][1]; // Distance left/right from the box
                     phiGoal = boxes.coords[i][2];
-                
-                    phiGoal -= M_PI/6;
-                    xGoal += cos(phiGoal)*0.75;
-                    yGoal += sin(phiGoal)*0.75;
-                    phiGoal += M_PI;
-                }
-            
 
+                    phiGoal += degree*deg2Rad;
+                    xGoal += cos(phiGoal)*rad_dist;
+                    yGoal += sin(phiGoal)*rad_dist;
+                    phiGoal += M_PI;
+
+                    //define START VARIABLE
+                geometry_msgs::PoseStamped start;
+                start.header.frame_id="map";
+                start.header.stamp = ros::Time::now();
+                start.pose.position.x=robotPose.x;
+                start.pose.position.y=robotPose.y;
+
+                //define GOAL VARIABLE
+                geometry_msgs::PoseStamped goal;
+                goal.header.frame_id="map";
+                goal.header.stamp = ros::Time::now();
+                goal.pose.position.x=xGoal;
+                goal.pose.position.y=yGoal;
+
+                // Check if point is valid
+                ros::ServiceClient check_path = n.serviceClient<nav_msgs::GetPlan>("/move_base/NavfnROS/make_plan");
+                nav_msgs::GetPlan srv;
+                srv.request.start= start;
+                srv.request.goal=goal;
+                // srv.request.start.pose.position.x=robotPose.x; // Get current position of robot
+                // srv.request.start.pose.position.y=robotPose.y;// Get current position of robot
+                // srv.request.goal.pose.position.x= m_0_x;
+                // srv.request.goal.pose.position.y= m_0_y;
+                check_path.call(srv);
+                
+                if (srv.response.plan.poses.size()>0) {
+                    cout << "Path plan successful. Valid Plan exists."<<endl;
+                    loop_break = true;
+                    cout << "(" << rad_dist << ", "<<degree<<")"<<endl;
+
+                    break;
+                }
+                
+
+                }
+
+                if(loop_break){
+                    break;
+                }
             }
             
+            // cout << "*****************" <<endl;
+            // cout << "Box Coords: " <<endl;
+            // cout << "x: " << xGoal << endl;
+            // cout << "y: " << yGoal << endl;
+            // cout << "phi: " << phiGoal <<endl;
+            // cout << "*****************" <<endl;
+            // // Want to move 0.5 m away form face of box
+            // xGoal += cos(phiGoal)*0.5;
+            // yGoal += sin(phiGoal)*0.5;
+
+            // phiGoal += M_PI;
+            
+            // cout << "*****************" <<endl;
+            // cout << "Target Pose: " <<endl;
+            // cout << "x : " << xGoal << endl;
+            // cout << "y : " << yGoal << endl;
+            // cout << "phi : " << phiGoal << endl;
+            // cout << "*****************" <<endl;
+
+            // // float xGoal = coords[i][0];
+            // // float yGoal = coords[i][1];
+            // // float phiGoal = coords[i][2];
+
+            // // Check if path is valid
+
+            // //define START VARIABLE
+            // geometry_msgs::PoseStamped start;
+            // start.header.frame_id="map";
+            // start.header.stamp = ros::Time::now();
+            // start.pose.position.x=robotPose.x;
+            // start.pose.position.y=robotPose.y;
+
+            // //define GOAL VARIABLE
+            // geometry_msgs::PoseStamped goal;
+            // goal.header.frame_id="map";
+            // goal.header.stamp = ros::Time::now();
+            // goal.pose.position.x=xGoal;
+            // goal.pose.position.y=yGoal;
+
+            // // Check if point is valid
+            // ros::ServiceClient check_path = n.serviceClient<nav_msgs::GetPlan>("/move_base/NavfnROS/make_plan");
+            // nav_msgs::GetPlan srv;
+            // srv.request.start= start;
+            // srv.request.goal=goal;
+            // // srv.request.start.pose.position.x=robotPose.x; // Get current position of robot
+            // // srv.request.start.pose.position.y=robotPose.y;// Get current position of robot
+            // // srv.request.goal.pose.position.x= m_0_x;
+            // // srv.request.goal.pose.position.y= m_0_y;
+            // check_path.call(srv);
+            // if (srv.response.plan.poses.size()>0) {
+            //     cout << "Path plan successful. Valid Plan exists."<<endl;
+            // }
+            
+            // else {
+            //     cout << "Path plan failure. Invalid Plan. Try +30" <<endl;
+            //     // Check +30
+            //     xGoal = boxes.coords[i][0]; // Distance away/towards the box
+            //     yGoal = boxes.coords[i][1]; // Distance left/right from the box
+            //     phiGoal = boxes.coords[i][2];
+                
+            //     phiGoal += M_PI/6;
+            //     xGoal += cos(phiGoal)*0.50;
+            //     yGoal += sin(phiGoal)*0.50;
+            //     phiGoal += M_PI;
+
+
+            //     //define START VARIABLE
+            //     geometry_msgs::PoseStamped start;
+            //     start.header.frame_id="map";
+            //     start.header.stamp = ros::Time::now();
+            //     start.pose.position.x=robotPose.x;
+            //     start.pose.position.y=robotPose.y;
+
+            //     //define GOAL VARIABLE
+            //     goal.header.frame_id="map";
+            //     goal.header.stamp = ros::Time::now();
+            //     goal.pose.position.x=xGoal;
+            //     goal.pose.position.y=yGoal;
+
+            //     // Check if point is valid
+            //     ros::ServiceClient check_path = n.serviceClient<nav_msgs::GetPlan>("/move_base/NavfnROS/make_plan");
+            //     nav_msgs::GetPlan srv;
+            //     srv.request.start= start;
+            //     srv.request.goal=goal;
+            //     // srv.request.start.pose.position.x=robotPose.x; // Get current position of robot
+            //     // srv.request.start.pose.position.y=robotPose.y;// Get current position of robot
+            //     // srv.request.goal.pose.position.x= m_0_x;
+            //     // srv.request.goal.pose.position.y= m_0_y;
+            //     check_path.call(srv);
+
+            //     if (srv.response.plan.poses.size()>0) {
+            //         cout << "_+30 Path plan successful. Valid +30 Plan exists."<<endl;
+            //     }
+
+            //     else {
+            //         // Go with -30. Assume it works
+            //         cout << "+30 Path plan failure. Going with -30 Plan."<<endl;
+
+            //         xGoal = boxes.coords[i][0]; // Distance away/towards the box
+            //         yGoal = boxes.coords[i][1]; // Distance left/right from the box
+            //         phiGoal = boxes.coords[i][2];
+                
+            //         phiGoal -= M_PI/6;
+            //         xGoal += cos(phiGoal)*0.75;
+            //         yGoal += sin(phiGoal)*0.75;
+            //         phiGoal += M_PI;
+            //     }
+            
+
+            // }
             
 
             // Navigate to chosen point
