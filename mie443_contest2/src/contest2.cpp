@@ -40,12 +40,12 @@ rosrun mie443_contest2 contest2
 using namespace std;
 
 int main(int argc, char** argv) {
-    // Setup ROS.
-    ros::init(argc, argv, "contest2");
-    ros::NodeHandle n;
-    // Robot pose object + subscriber.
-    RobotPose robotPose(0,0,0);
-    ros::Subscriber amclSub = n.subscribe("/amcl_pose", 1, &RobotPose::poseCallback, &robotPose);
+    // // Setup ROS.
+    // ros::init(argc, argv, "contest2");
+    // ros::NodeHandle n;
+    // // Robot pose object + subscriber.
+    // RobotPose robotPose(0,0,0);
+    // ros::Subscriber amclSub = n.subscribe("/amcl_pose", 1, &RobotPose::poseCallback, &robotPose);
 
     // Initialize box coordinates and templates
     Boxes boxes; 
@@ -59,8 +59,8 @@ int main(int argc, char** argv) {
         //           << boxes.coords[i][2] << std::endl;
     }
 
-    // Initialize image objectand subscriber.
-    ImagePipeline imagePipeline(n);
+    // // Initialize image objectand subscriber.
+    // ImagePipeline imagePipeline(n);
 
     // contest count down timer
     std::chrono::time_point<std::chrono::system_clock> start;
