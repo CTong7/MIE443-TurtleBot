@@ -10,6 +10,7 @@ int world_state;
 
 void followerCB(const geometry_msgs::Twist msg){
     follow_cmd = msg;
+	
 }
 
 void bumperCB(const geometry_msgs::Twist msg){
@@ -94,13 +95,16 @@ int main(int argc, char **argv)
 
 	while(ros::ok() && secondsElapsed <= 480){
 		ros::spinOnce(); // obtain new info from topics
-
+		
 		if(world_state == 0){
 			//fill with your code
-			//vel_pub.publish(vel);
+			// vel_pub.publish(vel);
+
 			vel_pub.publish(follow_cmd);
 
 		}else if(world_state == 1){
+			// Afraid Code
+
 			/*
 			...
 			...

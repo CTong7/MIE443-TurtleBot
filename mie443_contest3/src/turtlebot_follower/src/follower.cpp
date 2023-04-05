@@ -108,7 +108,7 @@ private:
     private_nh.getParam("enabled", enabled_);
 
     cmdpub_ = private_nh.advertise<geometry_msgs::Twist> ("cmd_vel", 1);
-    markerpub_ = private_nh.advertise<visualization_msgs::Marker>("marker",1);
+    markerpub_ = private_nh.advertise<visualization_msgs::Marker>("marker",1); // Markers published to marker topic
     bboxpub_ = private_nh.advertise<visualization_msgs::Marker>("bbox",1);
     sub_= nh.subscribe<sensor_msgs::Image>("depth/image_rect", 1, &TurtlebotFollower::imagecb, this);
 
