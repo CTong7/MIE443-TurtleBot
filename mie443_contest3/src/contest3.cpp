@@ -2,19 +2,30 @@
 //include "/home/chris/mie443_ws/src/MIE443-TurtleBot/mie443_contest3/include/header.h"
 #include <ros/package.h>
 #include <imageTransporter.hpp>
+#include <kobuki_msgs/BumperEvent.h>
 
 using namespace std;
 
 geometry_msgs::Twist follow_cmd;
 int world_state;
+//------INITIALIZE VECTOR OF SIZE 3 WITH ALL VALUES = RELEASED,---------------------------
+uint8_t bumper[3]={kobuki_msgs::BumperEvent::RELEASED,kobuki_msgs::BumperEvent::RELEASED,kobuki_msgs::BumperEvent::RELEASED};
 
 void followerCB(const geometry_msgs::Twist msg){
     follow_cmd = msg;
 }
 
-void bumperCB(const geometry_msgs::Twist msg){
+//callback function loads message from topic into a global variable so that it can be accessed
+void bumperCallback(const kobuki_msgs::BumperEvent::ConstPtr& msg){
+	//a bumperEvent object has 2 properties .state (RELEASED, PRESSED) and .bumper (0,1,2)
+	bumper[msg->bumper]=msg->state; // -> operator indicates that msg is a pointer to the BumperEvent message
+	ROS_INFO("bumper is hit");
     //Fill with code
 }
+
+//anger when it hits obstacle
+//fear when it loses sight
+//sadness
 
 //-------------------LAUNCH INSTRUCTIONS FOR COMPUTER TESTING -----------------------
 
@@ -60,11 +71,12 @@ int main(int argc, char **argv)
 	teleController eStop;
 
 	//publishers
-	ros::Publisher vel_pub = nh.advertise<geometry_msgs::Twist>("cmd_vel_mux/input/teleop",1);
+	ros::Publisher vel_pub = nh.advertise<geometry_msgs::Twist>("cmd_vel_mux/input/teleop",1); // it should take input from teleop
 
 	//subscribers
 	ros::Subscriber follower = nh.subscribe("follower_velocity_smoother/smooth_cmd_vel", 10, &followerCB);
-	ros::Subscriber bumper = nh.subscribe("mobile_base/events/bumper", 10, &bumperCB);
+	ros::Subscriber bumpersub = nh.subscribe("mobile_base/events/bumper", 10, &bumperCallback); //subscribe to bumper topic
+	//& in front of &bumperCallback gest teh addres of the funciton
 
     // contest count down timer = 7 MINUTES
     std::chrono::time_point<std::chrono::system_clock> start;
@@ -78,34 +90,110 @@ int main(int argc, char **argv)
 
 	int world_state = 0;
 
-	double angular = 0.2;
-	double linear = 0.0;
+	float angular = 0.2; // angular and linear are doubles
+	float linear = 0.0;
 
-	geometry_msgs::Twist vel;
+	geometry_msgs::Twist vel; //gemoetry_msgs is a float64, create a vel object (indexed through vel.linear.x or vel.angular.x)
 	vel.angular.z = angular;
 	vel.linear.x = linear;
 
 	//-----------------------ROS INITIALIZATION-------------------------------------------------
 
-	//PLAYS SOUND WAVE
-	sc.playWave(path_to_sounds + "sound.wav"); // specify name of wave file
+	
 
 	ros::Duration(0.5).sleep();
 
 	while(ros::ok() && secondsElapsed <= 480){
 		ros::spinOnce(); // obtain new info from topics
 
-		if(world_state == 0){
+
+
+
+		//-----------------------LOADING BUMPER INFO--------------------------
+		bool any_bumper_pressed=false;
+
+		for (uint32_t b_idx=0;b_idx<3; b_idx++){
+
+			any_bumper_pressed |= (bumper[b_idx]==kobuki_msgs::BumperEvent::PRESSED); //bitwise or, as long as one of the bumpers returns 1, any_bumper_pressed will return false
+			//can i just do bumper[b_idx].state?? so much easier to understand
+			// how can you even multiply a boolean and a 0/1???
+		}
+		//-----------------------LOADING BUMPER INFO--------------------------
+		if(any_bumper_pressed){
+			world_state=0;
+		}
+		else{
+			world_state=1;
+		}
+
+		if(world_state==0){
 			//fill with your code
 			//vel_pub.publish(vel);
-			vel_pub.publish(follow_cmd);
 
-		}else if(world_state == 1){
-			/*
-			...
-			...
-			*/
+			//-----------------PLAYS ANGRY SOUND WAVE-----------------------------
+			sc.playWave(path_to_sounds + "sound.wav"); // specify name of wave file
+
+			//-----------------SHOW PNG--------------------------------------------
+
+			cv::Mat image =cv::imread("/home/chris/Desktop/test.png");
+			cv::imshow("image", image);
+			
+
+
+			for (uint32_t i=0;i<3; i++){
+
+				//reverse by 20cm
+				angular=0.0;
+				linear=-0.5; //meters per second
+
+				vel.angular.z=angular;
+				vel.linear.x=linear;
+				vel_pub.publish(vel);
+
+				//Sleep so it can travel that far
+				ros::Duration(0.5).sleep();//unit: seconds
+
+				//add a time delay to let it travel that distance
+
+				// drive forward 20cm
+				// if we actually want slamming action we have to make it drive fowrard until bumper is hit again
+				angular=0.0;
+				linear=0.5; // meters per second
+
+				vel.angular.z=angular;
+				vel.linear.x=linear;
+				vel_pub.publish(vel); //name of publisher: vel_pub
+				ros::Duration(0.5).sleep();//unit: seconds
+
+				
+
+			}
 		}
+
+		else if (world_state==1){
+			
+			
+
+		}
+
+			//add a delay
+
+			// movebackwards
+			// angular=0.0;
+			// linear=1.0;
+
+			// vel.angular.z=angular;
+			// vel.linear.x=linear;
+			// vel_pub.publish(vel); //name of publisher: vel_pub
+
+			//vel_pub.publish(follow_cmd);
+		
+		// }else if(world_state == 1){
+		// 	/*
+		// 	...
+		// 	...
+		// 	*/
+		// }
 	}
 
 	return 0;
