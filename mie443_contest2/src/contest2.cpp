@@ -36,6 +36,24 @@ rosrun mie443_contest2 contest2
 
 using namespace std;
 
+vector<vector<int>> nearest_neighbours(float start_pose_x, float start_pose_y, float start_pose_phi, vector<vector<float>> box_coords){
+    /*
+    At the beginning of the contest, rearrange the coordinates of the boxes to shorten total distance travelled.
+    */
+    vector<vector<int>> output ={
+        {},
+        {},
+        {},
+        {},
+        {}
+    };
+
+    // while (output[4] == {}){
+
+    // }
+
+}
+
 int main(int argc, char** argv) {
     // Setup ROS.
     ros::init(argc, argv, "contest2");
@@ -101,14 +119,14 @@ int main(int argc, char** argv) {
         // 4 = Raisin Bran
 
         // Hardcode coordinates
-        vector<vector<float>> coords {
-            {-1.2, 1.5, 2.36},  // rice krispies north
-            {0.4, 1, 3.14},  // Toast Krunch
-            {-0.107, -0.905, 1.57},  // Empty Box
-            {2.4, -0.9, 3.93}, // Rice krispies south 
-            {1.9, 1.5, 1.57}, // Raisin bran
+        // vector<vector<float>> coords {
+        //     {-1.2, 1.5, 2.36},  // rice krispies north
+        //     {0.4, 1, 3.14},  // Toast Krunch
+        //     {-0.107, -0.905, 1.57},  // Empty Box
+        //     {2.4, -0.9, 3.93}, // Rice krispies south 
+        //     {1.9, 1.5, 1.57}, // Raisin bran
             
-        };
+        // };
 
         vector<int> box_id_visited;
         // Storing coordinates
@@ -132,7 +150,7 @@ int main(int argc, char** argv) {
             cout << "y: " << yGoal << endl;
             cout << "phi: " << phiGoal << endl;
             cout << "*****************" <<endl;
-            // Want to move 0.5 m away form face of box
+            // Want to move 0.5 m away from face of box
             xGoal += cos(phiGoal)*0.5;
             yGoal += sin(phiGoal)*0.5;
 
@@ -190,7 +208,6 @@ int main(int argc, char** argv) {
                 xGoal += cos(phiGoal)*0.75;
                 yGoal += sin(phiGoal)*0.75;
                 phiGoal += M_PI;
-
 
                 //define START VARIABLE
                 geometry_msgs::PoseStamped start;
@@ -261,7 +278,10 @@ int main(int argc, char** argv) {
             box_id_visited.push_back(template_id);
         }
         
-        Navigation::moveToGoal(starting_pose[0], starting_pose[1], starting_pose[2]); // Return to starting position
+        bool has_returned_home = Navigation::moveToGoal(starting_pose[0], starting_pose[1], starting_pose[2]); // Return to starting position
+        if (has_returned_home){
+            ROS_INFO("Returned to Starting Position.");
+        }
         //Write to text file
         ofstream myfile;
         myfile.open ("box_results.txt",ios::in | ios::out| ios::trunc); //trunc deletes contents of old file before writing.
