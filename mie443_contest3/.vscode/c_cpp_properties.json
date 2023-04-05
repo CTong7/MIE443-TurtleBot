@@ -9,6 +9,7 @@
         "/opt/ros/kinetic/include/**",
         "/home/chris/mie443_ws/src/MIE443-TurtleBot/mie443_contest1/include/**",
         "/home/chris/mie443_ws/src/MIE443-TurtleBot/mie443_contest2/include/**",
+        "/home/chris/mie443_ws/src/MIE443-TurtleBot/mie443_contest3/include/**",
         "/usr/include/**"
       ],
       "name": "ROS",

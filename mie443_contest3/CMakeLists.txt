@@ -1,5 +1,7 @@
 cmake_minimum_required(VERSION 2.8)
 project(mie443_contest3)
+set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=gnu++11")
 
 find_package(OpenCV 3 REQUIRED)
 
@@ -20,6 +22,3 @@ target_link_libraries(publisher ${catkin_LIBRARIES} ${OpenCV_LIBRARIES})
 add_executable(contest3 src/contest3.cpp
 			src/imageTransporter.cpp)
 target_link_libraries(contest3 ${catkin_LIBRARIES} ${OpenCV_LIBRARIES})
-
-set(CMAKE_CXX_STANDARD 11)
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=gnu++11")
