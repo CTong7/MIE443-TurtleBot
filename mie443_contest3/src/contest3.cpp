@@ -3,6 +3,10 @@
 #include <ros/package.h>
 #include <imageTransporter.hpp>
 
+#include <iostream>
+#include <chrono>
+#include <thread>
+
 using namespace std;
 
 geometry_msgs::Twist follow_cmd;
@@ -10,11 +14,13 @@ int world_state;
 
 void followerCB(const geometry_msgs::Twist msg){
     follow_cmd = msg;
-	
+	// How to detect when we have lost track of person?
+
 }
 
 void bumperCB(const geometry_msgs::Twist msg){
     //Fill with code
+
 }
 
 //-------------------LAUNCH INSTRUCTIONS FOR COMPUTER TESTING -----------------------
@@ -95,7 +101,16 @@ int main(int argc, char **argv)
 
 	while(ros::ok() && secondsElapsed <= 480){
 		ros::spinOnce(); // obtain new info from topics
+		/* Set world state based on sensor info
+		world_state == 0 -> 
+		world_state == 1 -> Afraid emotion
+		world_state == 2 -> 
+		world_state == 3 -> 
+		world_state == 4 -> 
 		
+		*/
+		world_state = 1;
+
 		if(world_state == 0){
 			//fill with your code
 			// vel_pub.publish(vel);
@@ -104,11 +119,83 @@ int main(int argc, char **argv)
 
 		}else if(world_state == 1){
 			// Afraid Code
+			bool afraid_exit = false;
+			// Show video/image/gif
 
+			// Play sound - Better for it to be unambiguous than accurate
+			sc.playWave(path_to_sounds + "afraid.wav"); // specify name of wave file
+
+			//Move around as if afraid.
 			/*
-			...
-			...
+			- Spin around continuosly in a loop
+			- Fast, slow down, then spin the other way fast.
+			- Exit condition: ???
 			*/
+
+			
+
+			// Spin ccw for 5 seconds
+			// auto scared_timer_start = std::chrono::steady_clock::now();
+    		// auto scared_timer_end = scared_timer_start + std::chrono::seconds(5);
+			angular = 1.0;
+			std::chrono::time_point<std::chrono::system_clock> scared_timer_start;
+    		scared_timer_start = std::chrono::system_clock::now();
+			uint64_t scared_duration = 0;
+			uint64_t scared_target_duration_long = 4;
+			uint64_t scared_target_duration_short = 1;
+
+			
+			secondsElapsed = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now()-start).count();
+
+			while (!afraid_exit){
+				scared_timer_start = std::chrono::system_clock::now();
+				scared_duration = 0;
+
+				while (scared_duration < scared_target_duration_long) {
+					vel.angular.z = angular;
+					std::this_thread::sleep_for(std::chrono::milliseconds(100)); // pause for 100 ms
+					vel_pub.publish(vel);
+					scared_duration = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now()-scared_timer_start).count();
+
+				}
+
+				scared_timer_start = std::chrono::system_clock::now();
+				scared_duration = 0;
+				while (scared_duration < scared_target_duration_short) {
+					vel.angular.z = 0.0;
+					std::this_thread::sleep_for(std::chrono::milliseconds(100)); // pause for 100 ms
+					vel_pub.publish(vel);
+					scared_duration = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now()-scared_timer_start).count();
+
+				}		
+
+				scared_timer_start = std::chrono::system_clock::now();
+				scared_duration = 0;
+				while (scared_duration < scared_target_duration_long) {
+					vel.angular.z = -angular;
+					std::this_thread::sleep_for(std::chrono::milliseconds(100)); // pause for 100 ms
+					vel_pub.publish(vel);
+					scared_duration = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now()-scared_timer_start).count();
+
+				}	
+
+				scared_timer_start = std::chrono::system_clock::now();
+				scared_duration = 0;
+				while (scared_duration < scared_target_duration_short) {
+					vel.angular.z = 0.0;
+					std::this_thread::sleep_for(std::chrono::milliseconds(100)); // pause for 100 ms
+					vel_pub.publish(vel);
+					scared_duration = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now()-scared_timer_start).count();
+
+				}	
+
+				
+				afraid_exit = true;
+
+			}
+    		
+
+
 		}
 	}
 
