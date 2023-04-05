@@ -131,11 +131,12 @@ int main(int argc, char **argv)
 			//vel_pub.publish(vel);
 
 			//-----------------PLAYS ANGRY SOUND WAVE-----------------------------
-			sc.playWave(path_to_sounds + "sound.wav"); // specify name of wave file
+			sc.playWave(path_to_sounds + "goku.wav"); // specify name of wave file
 
 			//-----------------SHOW PNG--------------------------------------------
 
 			cv::Mat image =cv::imread("/home/chris/Desktop/test.png");
+			///home/chris/mie443_ws/src/MIE443-TurtleBot/mie443_contest3/src/angry.png
 			cv::imshow("image", image);
 			
 
