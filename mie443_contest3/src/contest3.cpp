@@ -121,7 +121,8 @@ int main(int argc, char **argv)
 			// Afraid Code
 			bool afraid_exit = false;
 			// Show video/image/gif
-
+			
+			
 			// Play sound - Better for it to be unambiguous than accurate
 			sc.playWave(path_to_sounds + "afraid.wav"); // specify name of wave file
 
@@ -131,8 +132,6 @@ int main(int argc, char **argv)
 			- Fast, slow down, then spin the other way fast.
 			- Exit condition: ???
 			*/
-
-			
 
 			// Spin ccw for 5 seconds
 			// auto scared_timer_start = std::chrono::steady_clock::now();
