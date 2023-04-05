@@ -154,7 +154,7 @@ Output:
             match_array[box_id] = good_matches.size(); //Save in array
             std::cout << "Num good matches: " << match_array[box_id] << endl;
             cout << "Box ID : " << box_id <<endl;
-            usleep(500000); // Sleep for 500 ms (500000 us)
+            usleep(50000); // Sleep for 50 ms (50000 us)
 
         }
 
