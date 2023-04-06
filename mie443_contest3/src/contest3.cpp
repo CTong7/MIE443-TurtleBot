@@ -95,14 +95,29 @@ int main(int argc, char **argv)
 	//-----------------------ROS INITIALIZATION-------------------------------------------------
 
 	//PLAYS SOUND WAVE
-	sc.playWave(path_to_sounds + "sound.wav"); // specify name of wave file
+	//sc.playWave(path_to_sounds + "sound.wav"); // specify name of wave file
 
 	ros::Duration(0.5).sleep();
 
-	while(ros::ok() && secondsElapsed <= 480){
-		ros::spinOnce(); // obtain new info from topics
+	// We only want to execute fear once ever
+	bool afraid_exit = false;
 
-		ros::Duration(0.5).sleep();
+
+	while(ros::ok() && secondsElapsed <= 480){
+		ros::spinOnce();
+		ros::Duration(0.1).sleep();
+		vel_pub.publish(follow_cmd);
+
+		
+		// int i;
+		// for (i = 0; i < 3;i++){
+		// 	ros::spinOnce(); // obtain new info from topics
+		// 	ros::Duration(0.01).sleep();
+		// 	//Always publish follow cmds.
+		// 	vel_pub.publish(follow_cmd);
+		// }
+		
+
 		/* Set world state based on sensor info
 		world_state == 0 -> 
 		world_state == 1 -> Afraid emotion
@@ -118,7 +133,8 @@ int main(int argc, char **argv)
 		ROS_INFO("follow cmd: %f", follow_cmd.linear.x);
 		ROS_INFO("Seconds ealpseds: %lu", secondsElapsed);
 		
-		if (follow_cmd.linear.x < 0.1 && follow_cmd.linear.x > -0.1 && secondsElapsed > 5){ //
+		
+		if (follow_cmd.linear.x < 0.1 && follow_cmd.linear.x > -0.1 && secondsElapsed > 5 && !afraid_exit){ // If afraid_exit is true, never execute.
 			world_state = 1;
 		}
 		else {
@@ -134,7 +150,6 @@ int main(int argc, char **argv)
 
 		}else if(world_state == 1){
 			// Afraid Code
-			bool afraid_exit = false;
 			// Show video/image/gif
 			
 			
@@ -152,11 +167,11 @@ int main(int argc, char **argv)
 			// Spin ccw for 5 seconds
 			// auto scared_timer_start = std::chrono::steady_clock::now();
     		// auto scared_timer_end = scared_timer_start + std::chrono::seconds(5);
-			angular = 1.0;
+			angular = 2.0;
 			std::chrono::time_point<std::chrono::system_clock> scared_timer_start;
     		scared_timer_start = std::chrono::system_clock::now();
 			uint64_t scared_duration = 0;
-			uint64_t scared_target_duration_long = 4;
+			uint64_t scared_target_duration_long = 1;
 			uint64_t scared_target_duration_short = 1;
 
 			
@@ -167,7 +182,7 @@ int main(int argc, char **argv)
 				while (scared_duration < scared_target_duration_long) {
 
 					ROS_INFO("Hello");
-					vel.angular.z = 1.0;
+					vel.angular.z = angular;
 					vel_pub.publish(vel);
 					scared_duration = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now()-scared_timer_start).count();
 					std::this_thread::sleep_for(std::chrono::milliseconds(100)); // pause for 100 ms
@@ -187,7 +202,7 @@ int main(int argc, char **argv)
 				scared_timer_start = std::chrono::system_clock::now();
 				scared_duration = 0;
 				while (scared_duration < scared_target_duration_long) {
-					vel.angular.z = -2.0;
+					vel.angular.z = -angular;
 					std::this_thread::sleep_for(std::chrono::milliseconds(100)); // pause for 100 ms
 					vel_pub.publish(vel);
 					scared_duration = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now()-scared_timer_start).count();
@@ -206,6 +221,7 @@ int main(int argc, char **argv)
 
 				
 				afraid_exit = true;
+
 
 			}
     		
