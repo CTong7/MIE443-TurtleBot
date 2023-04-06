@@ -3,6 +3,7 @@
 #include <ros/package.h>
 #include <imageTransporter.hpp>
 #include <kobuki_msgs/WheelDropEvent.h>
+#include <kobuki_msgs/BumperEvent.h>
 
 
 #include <iostream>
@@ -15,21 +16,29 @@ geometry_msgs::Twist follow_cmd;
 int world_state;
 uint8_t wheel[2]={kobuki_msgs::WheelDropEvent::RAISED, kobuki_msgs::WheelDropEvent::RAISED};
 
+uint8_t bumper[3] = {kobuki_msgs::BumperEvent::RELEASED, kobuki_msgs::BumperEvent::RELEASED, kobuki_msgs::BumperEvent::RELEASED};
 void followerCB(const geometry_msgs::Twist msg){
     follow_cmd = msg;
 	// How to detect when we have lost track of person?
+	// ROS_INFO("TurtleBot has been follow");
 
 }
 
-void bumperCB(const geometry_msgs::Twist msg){
-    //Fill with code
-
+void bumperCB(const kobuki_msgs::BumperEvent::ConstPtr& msg)
+{
+	//fill with your code
+    // Access using bumper[kobuki_msgs::BumperEvent::{}] LEFT, CENTER, or RIGHT
+    bumper[msg->bumper] = msg->state;
+    //ROS_INFO("Bumper #%lf pressed.", bumper);
+	ROS_INFO("TurtleBot has been bumped");
 }
+
 
 void wheel_drop_CB(const kobuki_msgs::WheelDropEvent::ConstPtr& msg){
 	// A WheelDropEvent has 2 properties .wheel (LEFT=0,RIGHT=1) and .state (RAISED=0,DROPPED=1)
 	wheel[msg->wheel] = msg->state; // -> operator indicates that msg is a pointer to the WheelDropEvent message
 	ROS_INFO("TurtleBot has been lifted");
+
 }
 
 //-------------------LAUNCH INSTRUCTIONS FOR COMPUTER TESTING -----------------------
@@ -81,6 +90,7 @@ int main(int argc, char **argv)
 	//subscribers
 	ros::Subscriber follower = nh.subscribe("follower_velocity_smoother/smooth_cmd_vel", 10, &followerCB);
 	ros::Subscriber bumper = nh.subscribe("mobile_base/events/bumper", 10, &bumperCB);
+	ros::Subscriber wheel_drop = nh.subscribe("mobile_base/events/wheel_drop", 10, &wheel_drop_CB);
 
     // contest count down timer = 7 MINUTES
     std::chrono::time_point<std::chrono::system_clock> start;
@@ -111,13 +121,25 @@ int main(int argc, char **argv)
 	// We only want to execute fear once ever
 	bool afraid_exit = false;
 
-
 	while(ros::ok() && secondsElapsed <= 480){
 		ros::spinOnce();
 		ros::Duration(0.1).sleep();
 		vel_pub.publish(follow_cmd);
 
-		
+
+		bool wheel_drop_triggered = false; //wheel_drop_triggered = 0
+
+		for (uint32_t w_idx = 0; w_idx < 2; w_idx++){
+
+			// Check if either the LEFT (0) or Right (1) wheels have been lowered
+			// Bitwise OR operation; as long as one of the wheels returns 0, wheel_drop_triggered will return false
+			wheel_drop_triggered |= (wheel[w_idx] == kobuki_msgs::WheelDropEvent::DROPPED);
+			// True when wheels are tucked in, false when one wheel is dropped
+
+		}
+
+	
+
 		// int i;
 		// for (i = 0; i < 3;i++){
 		// 	ros::spinOnce(); // obtain new info from topics
@@ -145,11 +167,16 @@ int main(int argc, char **argv)
 		
 		if (follow_cmd.linear.x < 0.1 && follow_cmd.linear.x > -0.1 && secondsElapsed > 5 && !afraid_exit){ // If afraid_exit is true, never execute.
 			world_state = 1;
+		} else if (wheel_drop_triggered) {
+			ROS_INFO("Triggered");
+			// If one of the wheels has dropped, then enter into world_state 3
+			world_state = 3;
 		}
 		else {
 			world_state = 0;
 		}
 
+		// Executes code based on World State
 		if(world_state == 0){
 			//fill with your code
 			// vel_pub.publish(vel);
@@ -157,7 +184,7 @@ int main(int argc, char **argv)
 			ROS_INFO("World State: %i", world_state);
 			vel_pub.publish(follow_cmd);
 
-		}else if(world_state == 1){
+		} else if(world_state == 1){
 			// Afraid Code
 			// Show video/image/gif
 			
@@ -232,11 +259,22 @@ int main(int argc, char **argv)
 				afraid_exit = true;
 
 
-			}
-    		
+			}  
+			
+		} else if(world_state == 3) {
+			ROS_INFO("World State 3");
+			while (wheel_drop_triggered){
+				
+				// While the TurtleBot is raise, play sound
+				sc.playWave(path_to_sounds + "excited.wav");
+				std::this_thread::sleep_for(std::chrono::milliseconds(6000)); // pause for 100 ms
 
+				// Show image of Homer cheering	on the laptop screen	
+
+			}
 
 		}
+    		
 
 		secondsElapsed = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now()-start).count();
 
