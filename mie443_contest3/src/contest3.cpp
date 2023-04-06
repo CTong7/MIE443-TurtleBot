@@ -2,6 +2,8 @@
 //include "/home/chris/mie443_ws/src/MIE443-TurtleBot/mie443_contest3/include/header.h"
 #include <ros/package.h>
 #include <imageTransporter.hpp>
+#include <kobuki_msgs/WheelDropEvent.h>
+
 
 #include <iostream>
 #include <chrono>
@@ -11,6 +13,7 @@ using namespace std;
 
 geometry_msgs::Twist follow_cmd;
 int world_state;
+uint8_t wheel[2]={kobuki_msgs::WheelDropEvent::RAISED, kobuki_msgs::WheelDropEvent::RAISED};
 
 void followerCB(const geometry_msgs::Twist msg){
     follow_cmd = msg;
@@ -21,6 +24,12 @@ void followerCB(const geometry_msgs::Twist msg){
 void bumperCB(const geometry_msgs::Twist msg){
     //Fill with code
 
+}
+
+void wheel_drop_CB(const kobuki_msgs::WheelDropEvent::ConstPtr& msg){
+	// A WheelDropEvent has 2 properties .wheel (LEFT=0,RIGHT=1) and .state (RAISED=0,DROPPED=1)
+	wheel[msg->wheel] = msg->state; // -> operator indicates that msg is a pointer to the WheelDropEvent message
+	ROS_INFO("TurtleBot has been lifted");
 }
 
 //-------------------LAUNCH INSTRUCTIONS FOR COMPUTER TESTING -----------------------
