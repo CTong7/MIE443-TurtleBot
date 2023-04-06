@@ -109,12 +109,22 @@ int main(int argc, char **argv)
 		world_state == 4 -> 
 		
 		*/
-		world_state = 1;
+	// Manual Setting
+		//world_state = 1;
+
+		// Trigger afraid if loses track of person, and time > 5 seconds
+		
+		if (follow_cmd.linear.x < 0.1 && follow_cmd.angular.z < 0.1 && secondsElapsed > 5){
+			world_state = 1;
+		}
+		else {
+			world_state = 0
+		}
 
 		if(world_state == 0){
 			//fill with your code
 			// vel_pub.publish(vel);
-
+			sc.playWave(path_to_sounds + "sound.wav"); 
 			vel_pub.publish(follow_cmd);
 
 		}else if(world_state == 1){
