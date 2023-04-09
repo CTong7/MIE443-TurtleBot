@@ -4,6 +4,7 @@
 #include <imageTransporter.hpp>
 #include <kobuki_msgs/WheelDropEvent.h>
 #include <kobuki_msgs/BumperEvent.h>
+#include "opencv2/opencv.hpp"
 
 
 #include <iostream>
@@ -11,7 +12,14 @@
 #include <thread>
 
 using namespace std;
+using namespace cv;
 
+// cv::Mat afraid_img, excited_img, angry_img, sad_img;
+// cv::Mat image1,image2;
+
+// afraid_img=cv::imread("../images/benz.jpeg");
+
+// cv::imshow("AHHHH",image1);
 geometry_msgs::Twist follow_cmd;
 int world_state;
 uint8_t wheel[2]={kobuki_msgs::WheelDropEvent::RAISED, kobuki_msgs::WheelDropEvent::RAISED};
@@ -120,6 +128,7 @@ int main(int argc, char **argv)
 
 	// We only want to execute fear once ever
 	bool afraid_exit_lock = false;
+	bool has_just_exited_afraid = false;
 	bool prompt_for_name = false;
 
 	while(ros::ok() && secondsElapsed <= 480){
@@ -129,6 +138,7 @@ int main(int argc, char **argv)
 
 
 		bool wheel_drop_triggered = false; //wheel_drop_triggered = 0
+		string user_name;
 
 		for (uint32_t w_idx = 0; w_idx < 2; w_idx++){
 
@@ -158,35 +168,51 @@ int main(int argc, char **argv)
 		world_state == 4 -> 
 		
 		*/
-	// Manual Setting
+		// Manual Setting
 		//world_state = 1;
 
-		// Trigger afraid if loses track of person, and time > 5 seconds
 		ROS_INFO("follow cmd: %f", follow_cmd.linear.x);
 		ROS_INFO("Seconds ealpseds: %lu", secondsElapsed);
 		
 		if (follow_cmd.linear.x < 0.1 && follow_cmd.linear.x > -0.1 && secondsElapsed > 5 && !afraid_exit_lock){ // If afraid_exit_lock is true, never execute.
 			world_state = 1;
-		} else if (wheel_drop_triggered) {
-			ROS_INFO("Triggered");
+
+		} else if (wheel_drop_triggered && !prompt_for_name) { 
+			prompt_for_name = true;
+
+			continue;
 			// If one of the wheels has dropped, then enter into world_state 3
-			world_state = 3;
 		}
-		else if (prompt_for_name && (follow_cmd.linear.x > 0.1 || follow_cmd.linear.x < -0.1)){
+		else if (has_just_exited_afraid){
+			if (follow_cmd.linear.x > 0.1 || follow_cmd.linear.x < -0.1){
+				prompt_for_name = true;
+				has_just_exited_afraid = false;
+				continue;
+			}
+		
+		}
+		else if (prompt_for_name){
 			
-			world_state = 2;
-			prompt_for_name = false;
-		}
-		else if(){
+			cout << "Please enter your Name: " <<endl;
+    		getline(cin, user_name);
 
-		}else if (){
+			if (user_name == "Andrew"){
+				ROS_INFO("YAY I FOUND YOU AGAIN!");
+				world_state = 3; // excited
 
+			}
+			else {
+
+				ROS_INFO("You are not my owner ... ");
+				world_state = 4; // Sad
+			}
 		}
+		
 		else {
 			world_state = 0;
 		}
 
-		// Executes code based on World State
+		//////////////////////// Executes code based on World State ///////////////////////
 		if(world_state == 0){
 			//fill with your code
 			// vel_pub.publish(vel);
@@ -211,12 +237,12 @@ int main(int argc, char **argv)
 			// Spin ccw for 5 seconds
 			// auto scared_timer_start = std::chrono::steady_clock::now();
     		// auto scared_timer_end = scared_timer_start + std::chrono::seconds(5);
-			angular = 3.0;
+			angular = 2.5;
 			std::chrono::time_point<std::chrono::system_clock> scared_timer_start;
     		scared_timer_start = std::chrono::system_clock::now();
 			uint64_t scared_duration = 0;
-			uint64_t scared_target_duration_long = 1;
-			uint64_t scared_target_duration_short = 0.5;
+			float scared_target_duration_long = 1;
+			float scared_target_duration_short = 0.25;
 
 			int counter = 0;
 
@@ -225,12 +251,14 @@ int main(int argc, char **argv)
 				// Play sound - Better for it to be unambiguous than accurate
 				sc.playWave(path_to_sounds + "afraid.wav"); // specify name of wave file
 
+				imshow("AHHHHHH", img_matches);
+        		waitKey();
+
 				scared_timer_start = std::chrono::system_clock::now();
 				scared_duration = 0;
 
 				for (int i = 0; i <2; i++){
 					while (scared_duration < scared_target_duration_long) {
-
 						vel.angular.z = angular;
 						vel_pub.publish(vel);
 						scared_duration = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now()-scared_timer_start).count();
@@ -272,11 +300,13 @@ int main(int argc, char **argv)
 				counter ++;
 
 			}  
+
+			has_just_exited_afraid = true;
+			afraid_exit_lock = true;
 			
 		} else if(world_state == 3) {
 			ROS_INFO("World State 3");
 			while (wheel_drop_triggered){
-								afraid_exit_lock = true;
 				prompt_for_name = true;
 
 				// While the TurtleBot is raise, play sound
