@@ -88,16 +88,11 @@ int main(int argc, char **argv)
 	string path_to_sounds = ros::package::getPath("mie443_contest3") + "/sounds/"; // defining file path to .wav files
 	teleController eStop;
 
-	// cv::Mat afraid_img, excited_img, angry_img, sad_img;
-cv::Mat image1,image2;
+cv::Mat afraid_img, excited_img, angry_img, sad_img;
 string path_to_imgs = ros::package::getPath("mie443_contest3") + "/images/";
-cv::Mat afraid_img = cv::imread(path_to_imgs + "scared.png");
+afraid_img = cv::imread(path_to_imgs + "scared.png");
 
-cv::namedWindow("AHHHH", cv::WINDOW_NORMAL);
-cv::setWindowProperty("AHHHH", CV_WND_PROP_FULLSCREEN, CV_WINDOW_FULLSCREEN);
-cv::imshow("AHHHH",afraid_img);
-cv::waitKey(0);
-destroyAllWindows();
+
 
 	//publishers
 	ros::Publisher vel_pub = nh.advertise<geometry_msgs::Twist>("cmd_vel_mux/input/teleop",1);
@@ -181,24 +176,31 @@ destroyAllWindows();
 		ROS_INFO("follow cmd: %f", follow_cmd.linear.x);
 		ROS_INFO("Seconds ealpseds: %lu", secondsElapsed);
 		
-		if (follow_cmd.linear.x < 0.1 && follow_cmd.linear.x > -0.1 && secondsElapsed > 5 && !afraid_exit_lock){ // If afraid_exit_lock is true, never execute.
-			world_state = 1;
+		if (!afraid_exit_lock) { // If afraid_exit_lock is true, never execute.
+			if ((follow_cmd.linear.x < 0.1 && follow_cmd.linear.x > -0.1 && secondsElapsed > 2)){
+				ROS_INFO("World State Afraid Update 1");
+				world_state = 1;
+			}
 
 		} else if (wheel_drop_triggered && !prompt_for_name) { 
 			prompt_for_name = true;
 
 			continue;
 			// If one of the wheels has dropped, then enter into world_state 3
-		}
-		else if (has_just_exited_afraid){
+		} else if (has_just_exited_afraid){
+			cout << "Has Just Exited Afriad" <<endl;
 			if (follow_cmd.linear.x > 0.1 || follow_cmd.linear.x < -0.1){
 				prompt_for_name = true;
 				has_just_exited_afraid = false;
 				continue;
 			}
+			else {
+				world_state = 0;
+
+			}
+
 		
-		}
-		else if (prompt_for_name){
+		} else if (prompt_for_name){
 			
 			cout << "Please enter your Name: " <<endl;
     		getline(cin, user_name);
@@ -213,9 +215,7 @@ destroyAllWindows();
 				ROS_INFO("You are not my owner ... ");
 				world_state = 4; // Sad
 			}
-		}
-		
-		else {
+		} else {
 			world_state = 0;
 		}
 
@@ -252,17 +252,21 @@ destroyAllWindows();
 			float scared_target_duration_short = 0.25;
 
 			int counter = 0;
+			// cv::namedWindow("AHHHH", cv::WINDOW_NORMAL);
+			// cv::setWindowProperty("AHHHH", CV_WND_PROP_FULLSCREEN, CV_WINDOW_FULLSCREEN);
+			//cv::imshow("AHHHH",afraid_img);
 
-			// Play sound twice
-			while (counter < 2){
+
+			// // Play sound twice
+			// while (counter < 2){
 				// Play sound - Better for it to be unambiguous than accurate
 				sc.playWave(path_to_sounds + "afraid.wav"); // specify name of wave file
-			
+				waitKey(6000);
 
 				scared_timer_start = std::chrono::system_clock::now();
 				scared_duration = 0;
 
-				for (int i = 0; i <2; i++){
+				//for (int i = 0; i <2; i++){
 					while (scared_duration < scared_target_duration_long) {
 						vel.angular.z = angular;
 						vel_pub.publish(vel);
@@ -300,14 +304,16 @@ destroyAllWindows();
 						scared_duration = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now()-scared_timer_start).count();
 
 					}
-				}
+				//}
 					
-				counter ++;
+				// counter ++;
 
-			}  
+			// }  
 
 			has_just_exited_afraid = true;
 			afraid_exit_lock = true;
+			cout << "Afraid Exit Lock" << afraid_exit_lock <<endl;
+			destroyAllWindows();
 			
 		} else if(world_state == 3) {
 			ROS_INFO("World State 3");
