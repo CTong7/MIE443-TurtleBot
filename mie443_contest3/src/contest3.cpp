@@ -20,7 +20,8 @@ geometry_msgs::Twist follow_cmd;
 int world_state;
 uint8_t wheel[2]={kobuki_msgs::WheelDropEvent::RAISED, kobuki_msgs::WheelDropEvent::RAISED};
 
-uint8_t bumper[3] = {kobuki_msgs::BumperEvent::RELEASED, kobuki_msgs::BumperEvent::RELEASED, kobuki_msgs::BumperEvent::RELEASED};
+uint8_t bumper_state[3] = {kobuki_msgs::BumperEvent::RELEASED, kobuki_msgs::BumperEvent::RELEASED, kobuki_msgs::BumperEvent::RELEASED};
+
 void followerCB(const geometry_msgs::Twist msg){
     follow_cmd = msg;
 	// How to detect when we have lost track of person?
@@ -32,7 +33,7 @@ void bumperCB(const kobuki_msgs::BumperEvent::ConstPtr& msg)
 {
 	//fill with your code
     // Access using bumper[kobuki_msgs::BumperEvent::{}] LEFT, CENTER, or RIGHT
-    bumper[msg->bumper] = msg->state;
+    bumper_state[msg->bumper] = msg->state;
     //ROS_INFO("Bumper #%lf pressed.", bumper);
 	ROS_INFO("TurtleBot has been bumped");
 }
@@ -88,11 +89,35 @@ int main(int argc, char **argv)
 	string path_to_sounds = ros::package::getPath("mie443_contest3") + "/sounds/"; // defining file path to .wav files
 	teleController eStop;
 
-cv::Mat afraid_img, excited_img, angry_img, sad_img;
-string path_to_imgs = ros::package::getPath("mie443_contest3") + "/images/";
-afraid_img = cv::imread(path_to_imgs + "scared.png");
+	cv::Mat afraid_img, excited_img, angry_img, sad_img;
+	string path_to_imgs = ros::package::getPath("mie443_contest3") + "/images/";
+	afraid_img = cv::imread(path_to_imgs + "afraid.png");
 
+	excited_img = cv::imread(path_to_imgs + "excited.png");
+	sad_img = cv::imread(path_to_imgs + "sad-dog.jpg");
+	angry_img = cv::imread(path_to_imgs + "angry.png");
 
+	// // Testing
+	// imshow("1",afraid_img);
+	// waitKey(0);
+	// imshow("1",excited_img);
+	// waitKey(0);
+	// imshow("1",sad_img);
+	// waitKey(0);
+	// imshow("1",angry_img);
+	// waitKey(0);
+
+std::chrono::time_point<std::chrono::system_clock> scared_timer_start, excited_timer_start, sound_timer_start, image_timer;
+scared_timer_start = std::chrono::system_clock::now();
+uint64_t scared_duration = 0;
+float scared_target_duration_long = 1;
+float scared_target_duration_short = 0.25;
+
+uint64_t excited_duration = 0;
+float excited_target_duration_long = 1;
+float excited_target_duration_short = 0.25;
+
+uint64_t sound_duration = 0;
 
 	//publishers
 	ros::Publisher vel_pub = nh.advertise<geometry_msgs::Twist>("cmd_vel_mux/input/teleop",1);
@@ -130,8 +155,11 @@ afraid_img = cv::imread(path_to_imgs + "scared.png");
 
 	// We only want to execute fear once ever
 	bool afraid_exit_lock = false;
+	bool sad_follow_lock = false;
 	bool has_just_exited_afraid = false;
 	bool prompt_for_name = false;
+
+	bool sound_initial_play = true;
 
 	while(ros::ok() && secondsElapsed <= 480){
 		ros::spinOnce();
@@ -151,8 +179,15 @@ afraid_img = cv::imread(path_to_imgs + "scared.png");
 
 		}
 
-	
+		bool any_bumper_pressed=false;
 
+		for (uint32_t b_idx=0; b_idx<3; b_idx++){
+			any_bumper_pressed |= (bumper_state[b_idx] == kobuki_msgs::BumperEvent::PRESSED); //bitwise or, as long as one of the bumpers returns 1, any_bumper_pressed will return false
+			cout<< "bumper for loop. Value: " << any_bumper_pressed << endl;
+			//can i just do bumper[b_idx].state?? so much easier to understand
+			// how can you even multiply a boolean and a 0/1???
+		}
+		ROS_INFO("Bumper Trigger: %i", any_bumper_pressed);
 		// int i;
 		// for (i = 0; i < 3;i++){
 		// 	ros::spinOnce(); // obtain new info from topics
@@ -176,19 +211,28 @@ afraid_img = cv::imread(path_to_imgs + "scared.png");
 		ROS_INFO("follow cmd: %f", follow_cmd.linear.x);
 		ROS_INFO("Seconds ealpseds: %lu", secondsElapsed);
 		
-		if (!afraid_exit_lock) { // If afraid_exit_lock is true, never execute.
-			if ((follow_cmd.linear.x < 0.1 && follow_cmd.linear.x > -0.1 && secondsElapsed > 2)){
+		if (!afraid_exit_lock && !any_bumper_pressed && !sad_follow_lock) { // If afraid_exit_lock is true, never execute.
+			if ((follow_cmd.linear.x < 0.05 && follow_cmd.linear.x > -0.05 && secondsElapsed > 5)){
 				ROS_INFO("World State Afraid Update 1");
 				world_state = 1;
 			}
 
-		} else if (wheel_drop_triggered && !prompt_for_name) { 
+		} else if (any_bumper_pressed && !sad_follow_lock){
+			ROS_INFO("World State Angry Update 2");
+			world_state = 2;
+		}
+		
+		else if (wheel_drop_triggered && !prompt_for_name) {
+			
+			destroyAllWindows(); 
+			cout << "Wheel Drop Prompt Name" <<endl;
+			sad_follow_lock = false;
 			prompt_for_name = true;
-
 			continue;
+
 			// If one of the wheels has dropped, then enter into world_state 3
-		} else if (has_just_exited_afraid){
-			cout << "Has Just Exited Afriad" <<endl;
+		} else if (has_just_exited_afraid && !sad_follow_lock){
+			cout << "Has Just Exited Afraid" <<endl;
 			if (follow_cmd.linear.x > 0.1 || follow_cmd.linear.x < -0.1){
 				prompt_for_name = true;
 				has_just_exited_afraid = false;
@@ -196,6 +240,7 @@ afraid_img = cv::imread(path_to_imgs + "scared.png");
 			}
 			else {
 				world_state = 0;
+				cout << "Waiting to find Person" <<endl;
 
 			}
 
@@ -208,23 +253,33 @@ afraid_img = cv::imread(path_to_imgs + "scared.png");
 			if (user_name == "Andrew"){
 				ROS_INFO("YAY I FOUND YOU AGAIN!");
 				world_state = 3; // excited
+				prompt_for_name = false;
 
 			}
 			else {
 
 				ROS_INFO("You are not my owner ... ");
 				world_state = 4; // Sad
+				sad_follow_lock = true;
+				prompt_for_name = false;
 			}
-		} else {
+		}
+		else {
 			world_state = 0;
+			
 		}
 
+		if (sad_follow_lock){
+			world_state=4;
+		}
 		//////////////////////// Executes code based on World State ///////////////////////
 		if(world_state == 0){
 			//fill with your code
 			// vel_pub.publish(vel);
 			//sc.playWave(path_to_sounds + "sound.wav"); 
 			ROS_INFO("World State: %i", world_state);
+
+			//follow_cmd.linear.x *= 0.7; // use this for sadness 
 			vel_pub.publish(follow_cmd);
 
 		} else if(world_state == 1){
@@ -245,66 +300,62 @@ afraid_img = cv::imread(path_to_imgs + "scared.png");
 			// auto scared_timer_start = std::chrono::steady_clock::now();
     		// auto scared_timer_end = scared_timer_start + std::chrono::seconds(5);
 			angular = 2.5;
-			std::chrono::time_point<std::chrono::system_clock> scared_timer_start;
-    		scared_timer_start = std::chrono::system_clock::now();
-			uint64_t scared_duration = 0;
-			float scared_target_duration_long = 1;
-			float scared_target_duration_short = 0.25;
+			
 
 			int counter = 0;
-			// cv::namedWindow("AHHHH", cv::WINDOW_NORMAL);
-			// cv::setWindowProperty("AHHHH", CV_WND_PROP_FULLSCREEN, CV_WINDOW_FULLSCREEN);
-			//cv::imshow("AHHHH",afraid_img);
+			cv::namedWindow("AHHHH", cv::WINDOW_NORMAL);
+			cv::setWindowProperty("AHHHH", CV_WND_PROP_FULLSCREEN, CV_WINDOW_FULLSCREEN);
+			cv::imshow("AHHHH",afraid_img);
 
 
 			// // Play sound twice
 			// while (counter < 2){
-				// Play sound - Better for it to be unambiguous than accurate
-				sc.playWave(path_to_sounds + "afraid.wav"); // specify name of wave file
-				waitKey(6000);
+			// Play sound - Better for it to be unambiguous than accurate
+			sc.playWave(path_to_sounds + "afraid.wav"); // specify name of wave file
+			waitKey(1);
+
+			scared_timer_start = std::chrono::system_clock::now();
+			scared_duration = 0;
+
+			for (int i = 0; i <2; i++){
+				while (scared_duration < scared_target_duration_long) {
+					vel.angular.z = angular;
+					vel_pub.publish(vel);
+					scared_duration = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now()-scared_timer_start).count();
+					std::this_thread::sleep_for(std::chrono::milliseconds(100)); // pause for 100 ms
+
+				}
 
 				scared_timer_start = std::chrono::system_clock::now();
 				scared_duration = 0;
+				while (scared_duration < scared_target_duration_short) {
+					vel.angular.z = 0.0;
+					std::this_thread::sleep_for(std::chrono::milliseconds(100)); // pause for 100 ms
+					vel_pub.publish(vel);
+					scared_duration = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now()-scared_timer_start).count();
 
-				//for (int i = 0; i <2; i++){
-					while (scared_duration < scared_target_duration_long) {
-						vel.angular.z = angular;
-						vel_pub.publish(vel);
-						scared_duration = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now()-scared_timer_start).count();
-						std::this_thread::sleep_for(std::chrono::milliseconds(100)); // pause for 100 ms
+				}		
 
-					}
+				scared_timer_start = std::chrono::system_clock::now();
+				scared_duration = 0;
+				while (scared_duration < scared_target_duration_long) {
+					vel.angular.z = -angular;
+					std::this_thread::sleep_for(std::chrono::milliseconds(100)); // pause for 100 ms
+					vel_pub.publish(vel);
+					scared_duration = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now()-scared_timer_start).count();
 
-					scared_timer_start = std::chrono::system_clock::now();
-					scared_duration = 0;
-					while (scared_duration < scared_target_duration_short) {
-						vel.angular.z = 0.0;
-						std::this_thread::sleep_for(std::chrono::milliseconds(100)); // pause for 100 ms
-						vel_pub.publish(vel);
-						scared_duration = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now()-scared_timer_start).count();
+				}	
 
-					}		
+				scared_timer_start = std::chrono::system_clock::now();
+				scared_duration = 0;
+				while (scared_duration < scared_target_duration_short) {
+					vel.angular.z = 0.0;
+					std::this_thread::sleep_for(std::chrono::milliseconds(100)); // pause for 100 ms
+					vel_pub.publish(vel);
+					scared_duration = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now()-scared_timer_start).count();
 
-					scared_timer_start = std::chrono::system_clock::now();
-					scared_duration = 0;
-					while (scared_duration < scared_target_duration_long) {
-						vel.angular.z = -angular;
-						std::this_thread::sleep_for(std::chrono::milliseconds(100)); // pause for 100 ms
-						vel_pub.publish(vel);
-						scared_duration = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now()-scared_timer_start).count();
-
-					}	
-
-					scared_timer_start = std::chrono::system_clock::now();
-					scared_duration = 0;
-					while (scared_duration < scared_target_duration_short) {
-						vel.angular.z = 0.0;
-						std::this_thread::sleep_for(std::chrono::milliseconds(100)); // pause for 100 ms
-						vel_pub.publish(vel);
-						scared_duration = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now()-scared_timer_start).count();
-
-					}
-				//}
+				}
+			}
 					
 				// counter ++;
 
@@ -315,21 +366,109 @@ afraid_img = cv::imread(path_to_imgs + "scared.png");
 			cout << "Afraid Exit Lock" << afraid_exit_lock <<endl;
 			destroyAllWindows();
 			
-		} else if(world_state == 3) {
-			ROS_INFO("World State 3");
-			while (wheel_drop_triggered){
-				prompt_for_name = true;
+		} else if (world_state == 2) {
+			ROS_INFO("World State 2");
+			//fill with your code
+			//vel_pub.publish(vel);
 
-				// While the TurtleBot is raise, play sound
-				sc.playWave(path_to_sounds + "excited.wav");
-				std::this_thread::sleep_for(std::chrono::milliseconds(6000)); // pause for 100 ms
+			//-----------------PLAYS ANGRY SOUND WAVE-----------------------------
+			sc.playWave(path_to_sounds + "angry-scream.wav"); // specify name of wave file
 
-				// Show image of Homer cheering	on the laptop screen	
+			//-----------------SHOW PNG--------------------------------------------
+
+			// cv::namedWindow("ang", cv::WINDOW_NORMAL);
+			// cv::setWindowProperty("AHHHH", CV_WND_PROP_FULLSCREEN, CV_WINDOW_FULLSCREEN);
+			// cv::imshow("AHHHH",afraid_img);
+			
+			for (uint32_t i=0;i<6; i++){
+
+				//reverse by 20cm
+				angular=0.0;
+				linear=-0.2; //meters per second
+
+				vel.angular.z=angular;
+				vel.linear.x=linear;
+				vel_pub.publish(vel);
+
+				//Sleep so it can travel that far
+				ros::Duration(0.5).sleep();//unit: seconds
+
+				//add a time delay to let it travel that distance
+
+				// drive forward 20cm
+				// if we actually want slamming action we have to make it drive fowrard until bumper is hit again
+				angular=0.0;
+				linear=0.2; // meters per second
+
+				vel.angular.z=angular;
+				vel.linear.x=linear;
+				vel_pub.publish(vel); //name of publisher: vel_pub
+				ros::Duration(0.5).sleep();//unit: seconds
 
 			}
 
+			// Exits Anger Emotion
+			vel.angular.z = 0.0;
+			vel.linear.x = 0.0;
+			world_state=0;
 		}
-    		
+		
+		
+		else if(world_state == 3) {
+			ROS_INFO("World State 3");
+
+			sc.playWave(path_to_sounds + "excited.wav");
+			// Move in a small circle
+			excited_timer_start = std::chrono::system_clock::now();
+			excited_duration = 0;
+			cv::namedWindow("Yay!", cv::WINDOW_NORMAL);
+			cv::setWindowProperty("Yay!", CV_WND_PROP_FULLSCREEN, CV_WINDOW_FULLSCREEN);
+			while (excited_duration < 5) {
+				
+				imshow("Yay!", excited_img);
+				waitKey(1);
+				vel.angular.z = 2.0;
+				vel.linear.x = 0.4;
+				std::this_thread::sleep_for(std::chrono::milliseconds(100)); // pause for 100 ms
+				vel_pub.publish(vel);
+				excited_duration = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now()-excited_timer_start).count();
+
+			}	
+
+			destroyAllWindows();
+
+
+		}
+		else if (world_state == 4) {
+
+			ROS_INFO("World State 4");
+			sad_follow_lock = true; // Make it so that sadness is always triggered until robot is picked up
+			
+			if (sound_initial_play){
+				sc.playWave(path_to_sounds + "sad.wav");
+				sound_initial_play = false;
+				sound_timer_start = std::chrono::system_clock::now();
+				sound_duration = 0;
+
+			}
+
+			follow_cmd.linear.x *= 0.5; // use this for sadness 
+			vel_pub.publish(follow_cmd);
+			cv::namedWindow("wahhh ...", cv::WINDOW_NORMAL);
+			cv::setWindowProperty("wahhh ...", CV_WND_PROP_FULLSCREEN, CV_WINDOW_FULLSCREEN);
+			imshow("wahhh ...", sad_img);
+			waitKey(1);
+
+			if(sound_duration > 103){
+				sound_initial_play = true;
+
+			}
+			
+			sound_duration = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now()-sound_timer_start).count();
+			prompt_for_name = false;
+			world_state = 4;
+		}
+
 
 		secondsElapsed = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now()-start).count();
 
