@@ -14,12 +14,8 @@
 using namespace std;
 using namespace cv;
 
-// cv::Mat afraid_img, excited_img, angry_img, sad_img;
-// cv::Mat image1,image2;
 
-// afraid_img=cv::imread("../images/benz.jpeg");
 
-// cv::imshow("AHHHH",image1);
 geometry_msgs::Twist follow_cmd;
 int world_state;
 uint8_t wheel[2]={kobuki_msgs::WheelDropEvent::RAISED, kobuki_msgs::WheelDropEvent::RAISED};
@@ -91,6 +87,17 @@ int main(int argc, char **argv)
 	sound_play::SoundClient sc;
 	string path_to_sounds = ros::package::getPath("mie443_contest3") + "/sounds/"; // defining file path to .wav files
 	teleController eStop;
+
+	// cv::Mat afraid_img, excited_img, angry_img, sad_img;
+cv::Mat image1,image2;
+string path_to_imgs = ros::package::getPath("mie443_contest3") + "/images/";
+cv::Mat afraid_img = cv::imread(path_to_imgs + "scared.png");
+
+cv::namedWindow("AHHHH", cv::WINDOW_NORMAL);
+cv::setWindowProperty("AHHHH", CV_WND_PROP_FULLSCREEN, CV_WINDOW_FULLSCREEN);
+cv::imshow("AHHHH",afraid_img);
+cv::waitKey(0);
+destroyAllWindows();
 
 	//publishers
 	ros::Publisher vel_pub = nh.advertise<geometry_msgs::Twist>("cmd_vel_mux/input/teleop",1);
@@ -250,9 +257,7 @@ int main(int argc, char **argv)
 			while (counter < 2){
 				// Play sound - Better for it to be unambiguous than accurate
 				sc.playWave(path_to_sounds + "afraid.wav"); // specify name of wave file
-
-				imshow("AHHHHHH", img_matches);
-        		waitKey();
+			
 
 				scared_timer_start = std::chrono::system_clock::now();
 				scared_duration = 0;
