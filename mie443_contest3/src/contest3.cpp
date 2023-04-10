@@ -2,30 +2,48 @@
 //include "/home/chris/mie443_ws/src/MIE443-TurtleBot/mie443_contest3/include/header.h"
 #include <ros/package.h>
 #include <imageTransporter.hpp>
+#include <kobuki_msgs/WheelDropEvent.h>
 #include <kobuki_msgs/BumperEvent.h>
+#include "opencv2/opencv.hpp"
+
+
+#include <iostream>
+#include <chrono>
+#include <thread>
 
 using namespace std;
+using namespace cv;
+
+
 
 geometry_msgs::Twist follow_cmd;
 int world_state;
-//------INITIALIZE VECTOR OF SIZE 3 WITH ALL VALUES = RELEASED,---------------------------
-uint8_t bumper[3]={kobuki_msgs::BumperEvent::RELEASED,kobuki_msgs::BumperEvent::RELEASED,kobuki_msgs::BumperEvent::RELEASED};
+uint8_t wheel[2]={kobuki_msgs::WheelDropEvent::RAISED, kobuki_msgs::WheelDropEvent::RAISED};
 
+uint8_t bumper[3] = {kobuki_msgs::BumperEvent::RELEASED, kobuki_msgs::BumperEvent::RELEASED, kobuki_msgs::BumperEvent::RELEASED};
 void followerCB(const geometry_msgs::Twist msg){
     follow_cmd = msg;
+	// How to detect when we have lost track of person?
+	// ROS_INFO("TurtleBot has been follow");
+
 }
 
-//callback function loads message from topic into a global variable so that it can be accessed
-void bumperCallback(const kobuki_msgs::BumperEvent::ConstPtr& msg){
-	//a bumperEvent object has 2 properties .state (RELEASED, PRESSED) and .bumper (0,1,2)
-	bumper[msg->bumper]=msg->state; // -> operator indicates that msg is a pointer to the BumperEvent message
-	ROS_INFO("bumper is hit");
-    //Fill with code
+void bumperCB(const kobuki_msgs::BumperEvent::ConstPtr& msg)
+{
+	//fill with your code
+    // Access using bumper[kobuki_msgs::BumperEvent::{}] LEFT, CENTER, or RIGHT
+    bumper[msg->bumper] = msg->state;
+    //ROS_INFO("Bumper #%lf pressed.", bumper);
+	ROS_INFO("TurtleBot has been bumped");
 }
 
-//anger when it hits obstacle
-//fear when it loses sight
-//sadness
+
+void wheel_drop_CB(const kobuki_msgs::WheelDropEvent::ConstPtr& msg){
+	// A WheelDropEvent has 2 properties .wheel (LEFT=0,RIGHT=1) and .state (RAISED=0,DROPPED=1)
+	wheel[msg->wheel] = msg->state; // -> operator indicates that msg is a pointer to the WheelDropEvent message
+	ROS_INFO("TurtleBot has been lifted");
+
+}
 
 //-------------------LAUNCH INSTRUCTIONS FOR COMPUTER TESTING -----------------------
 
@@ -70,13 +88,19 @@ int main(int argc, char **argv)
 	string path_to_sounds = ros::package::getPath("mie443_contest3") + "/sounds/"; // defining file path to .wav files
 	teleController eStop;
 
+	cv::Mat afraid_img, excited_img, angry_img, sad_img;
+	string path_to_imgs = ros::package::getPath("mie443_contest3") + "/images/";
+	afraid_img = cv::imread(path_to_imgs + "scared.png");
+	sad_img = cv::imread(path_to_imgs + "sad.png");
+
+
 	//publishers
-	ros::Publisher vel_pub = nh.advertise<geometry_msgs::Twist>("cmd_vel_mux/input/teleop",1); // it should take input from teleop
+	ros::Publisher vel_pub = nh.advertise<geometry_msgs::Twist>("cmd_vel_mux/input/teleop",1);
 
 	//subscribers
 	ros::Subscriber follower = nh.subscribe("follower_velocity_smoother/smooth_cmd_vel", 10, &followerCB);
-	ros::Subscriber bumpersub = nh.subscribe("mobile_base/events/bumper", 10, &bumperCallback); //subscribe to bumper topic
-	//& in front of &bumperCallback gest teh addres of the funciton
+	ros::Subscriber bumper = nh.subscribe("mobile_base/events/bumper", 10, &bumperCB);
+	ros::Subscriber wheel_drop = nh.subscribe("mobile_base/events/wheel_drop", 10, &wheel_drop_CB);
 
     // contest count down timer = 7 MINUTES
     std::chrono::time_point<std::chrono::system_clock> start;
@@ -90,111 +114,257 @@ int main(int argc, char **argv)
 
 	int world_state = 0;
 
-	float angular = 0.2; // angular and linear are doubles
-	float linear = 0.0;
+	double angular = 0.2;
+	double linear = 0.0;
 
-	geometry_msgs::Twist vel; //gemoetry_msgs is a float64, create a vel object (indexed through vel.linear.x or vel.angular.x)
+	geometry_msgs::Twist vel;
 	vel.angular.z = angular;
 	vel.linear.x = linear;
 
 	//-----------------------ROS INITIALIZATION-------------------------------------------------
 
-	
+	//PLAYS SOUND WAVE
+	//sc.playWave(path_to_sounds + "sound.wav"); // specify name of wave file
 
 	ros::Duration(0.5).sleep();
 
+	// We only want to execute fear once ever
+	bool afraid_exit_lock = false;
+	bool has_just_exited_afraid = false;
+	bool prompt_for_name = false;
+
 	while(ros::ok() && secondsElapsed <= 480){
-		ros::spinOnce(); // obtain new info from topics
+		ros::spinOnce();
+		ros::Duration(0.1).sleep();
+		vel_pub.publish(follow_cmd);
 
 
+		bool wheel_drop_triggered = false; //wheel_drop_triggered = 0
+		string user_name;
 
+		//--------------------------CHECK IF WHEEL DROP SENSOR WAS TRIGGERED-----------------------
+		for (uint32_t w_idx = 0; w_idx < 2; w_idx++){
 
-		//-----------------------LOADING BUMPER INFO--------------------------
-		bool any_bumper_pressed=false;
+			// Check if either the LEFT (0) or Right (1) wheels have been lowered
+			// Bitwise OR operation; as long as one of the wheels returns 0, wheel_drop_triggered will return false
+			wheel_drop_triggered |= (wheel[w_idx] == kobuki_msgs::WheelDropEvent::DROPPED);
+			// True when wheels are tucked in, false when one wheel is dropped
 
-		for (uint32_t b_idx=0;b_idx<3; b_idx++){
-
-			any_bumper_pressed |= (bumper[b_idx]==kobuki_msgs::BumperEvent::PRESSED); //bitwise or, as long as one of the bumpers returns 1, any_bumper_pressed will return false
-			//can i just do bumper[b_idx].state?? so much easier to understand
-			// how can you even multiply a boolean and a 0/1???
 		}
-		//-----------------------LOADING BUMPER INFO--------------------------
-		if(any_bumper_pressed){
-			world_state=0;
+		//-------------------------------------------------------------------------------------------
+
+	
+
+		// int i;
+		// for (i = 0; i < 3;i++){
+		// 	ros::spinOnce(); // obtain new info from topics
+		// 	ros::Duration(0.01).sleep();
+		// 	//Always publish follow cmds.
+		// 	vel_pub.publish(follow_cmd);
+		// }
+		
+
+		/* Set world state based on sensor info
+		world_state == 0 -> 
+		world_state == 1 -> Afraid emotion
+		world_state == 2 -> 
+		world_state == 3 -> 
+		world_state == 4 -> 
+		
+		*/
+		// Manual Setting
+		//world_state = 1;
+
+		ROS_INFO("follow cmd: %f", follow_cmd.linear.x);
+		ROS_INFO("Seconds ealpseds: %lu", secondsElapsed);
+		
+		if (!afraid_exit_lock) { // If afraid_exit_lock is true, never execute.
+			if ((follow_cmd.linear.x < 0.1 && follow_cmd.linear.x > -0.1 && secondsElapsed > 2)){
+				ROS_INFO("World State Afraid Update 1");
+				world_state = 1;
+			}
+
 		}
-		else{
-			world_state=1;
+		else if (wheel_drop_triggered && !prompt_for_name) { 
+			prompt_for_name = true;
+
+			continue;
+			// If one of the wheels has dropped, then enter into world_state 3
 		}
-
-		if(world_state==0){
-			//fill with your code
-			//vel_pub.publish(vel);
-
-			//-----------------PLAYS ANGRY SOUND WAVE-----------------------------
-			sc.playWave(path_to_sounds + "goku.wav"); // specify name of wave file
-
-			//-----------------SHOW PNG--------------------------------------------
-
-			cv::Mat image =cv::imread("/home/chris/Desktop/test.png");
-			///home/chris/mie443_ws/src/MIE443-TurtleBot/mie443_contest3/src/angry.png
-			cv::imshow("image", image);
-			
-
-
-			for (uint32_t i=0;i<3; i++){
-
-				//reverse by 20cm
-				angular=0.0;
-				linear=-0.5; //meters per second
-
-				vel.angular.z=angular;
-				vel.linear.x=linear;
-				vel_pub.publish(vel);
-
-				//Sleep so it can travel that far
-				ros::Duration(0.5).sleep();//unit: seconds
-
-				//add a time delay to let it travel that distance
-
-				// drive forward 20cm
-				// if we actually want slamming action we have to make it drive fowrard until bumper is hit again
-				angular=0.0;
-				linear=0.5; // meters per second
-
-				vel.angular.z=angular;
-				vel.linear.x=linear;
-				vel_pub.publish(vel); //name of publisher: vel_pub
-				ros::Duration(0.5).sleep();//unit: seconds
-
-				
+		
+		else if (has_just_exited_afraid){
+			cout << "Has Just Exited Afriad" <<endl;
+			if (follow_cmd.linear.x > 0.1 || follow_cmd.linear.x < -0.1){
+				prompt_for_name = true;
+				has_just_exited_afraid = false;
+				continue;
+			}
+			else {
+				world_state = 0;
 
 			}
-		}
 
-		else if (world_state==1){
-			
-			
-
-		}
-
-			//add a delay
-
-			// movebackwards
-			// angular=0.0;
-			// linear=1.0;
-
-			// vel.angular.z=angular;
-			// vel.linear.x=linear;
-			// vel_pub.publish(vel); //name of publisher: vel_pub
-
-			//vel_pub.publish(follow_cmd);
 		
-		// }else if(world_state == 1){
-		// 	/*
-		// 	...
-		// 	...
-		// 	*/
-		// }
+		}
+		else if (prompt_for_name){
+			
+			cout << "Please enter your Name: " <<endl;
+    		getline(cin, user_name);
+
+			if (user_name == "Andrew"){
+				ROS_INFO("YAY I FOUND YOU AGAIN!");
+				world_state = 3; // excited
+
+			}
+			else {
+
+				ROS_INFO("You are not my owner ... ");
+				world_state = 4; // Sad
+			}
+		} 
+		
+		else {
+			world_state = 0;
+		}
+
+		//////////////////////// Executes code based on World State ///////////////////////
+		if(world_state == 0){
+			//fill with your code
+			// vel_pub.publish(vel);
+			//sc.playWave(path_to_sounds + "sound.wav"); 
+			ROS_INFO("World State: %i", world_state);
+			vel_pub.publish(follow_cmd);
+
+		}
+		
+		else if(world_state == 1){
+			// Afraid Code
+			// Show video/image/gif
+			
+			
+			ROS_INFO("World State: %i", world_state);
+			
+			//Move around as if afraid.
+			/*
+			- Spin around continuosly in a loop
+			- Fast, slow down, then spin the other way fast.
+			- Exit condition: ???
+			*/
+
+			// Spin ccw for 5 seconds
+			// auto scared_timer_start = std::chrono::steady_clock::now();
+    		// auto scared_timer_end = scared_timer_start + std::chrono::seconds(5);
+			angular = 2.5;
+			std::chrono::time_point<std::chrono::system_clock> scared_timer_start;
+    		scared_timer_start = std::chrono::system_clock::now();
+			uint64_t scared_duration = 0;
+			float scared_target_duration_long = 1;
+			float scared_target_duration_short = 0.25;
+
+			int counter = 0;
+			// cv::namedWindow("AHHHH", cv::WINDOW_NORMAL);
+			// cv::setWindowProperty("AHHHH", CV_WND_PROP_FULLSCREEN, CV_WINDOW_FULLSCREEN);
+			//cv::imshow("AHHHH",afraid_img);
+
+
+			// // Play sound twice
+			// while (counter < 2){
+				// Play sound - Better for it to be unambiguous than accurate
+				sc.playWave(path_to_sounds + "afraid.wav"); // specify name of wave file
+				waitKey(6000);
+
+				scared_timer_start = std::chrono::system_clock::now();
+				scared_duration = 0;
+
+				//for (int i = 0; i <2; i++){
+					while (scared_duration < scared_target_duration_long) {
+						vel.angular.z = angular;
+						vel_pub.publish(vel);
+						scared_duration = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now()-scared_timer_start).count();
+						std::this_thread::sleep_for(std::chrono::milliseconds(100)); // pause for 100 ms
+
+					}
+
+					scared_timer_start = std::chrono::system_clock::now();
+					scared_duration = 0;
+					while (scared_duration < scared_target_duration_short) {
+						vel.angular.z = 0.0;
+						std::this_thread::sleep_for(std::chrono::milliseconds(100)); // pause for 100 ms
+						vel_pub.publish(vel);
+						scared_duration = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now()-scared_timer_start).count();
+
+					}		
+
+					scared_timer_start = std::chrono::system_clock::now();
+					scared_duration = 0;
+					while (scared_duration < scared_target_duration_long) {
+						vel.angular.z = -angular;
+						std::this_thread::sleep_for(std::chrono::milliseconds(100)); // pause for 100 ms
+						vel_pub.publish(vel);
+						scared_duration = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now()-scared_timer_start).count();
+
+					}	
+
+					scared_timer_start = std::chrono::system_clock::now();
+					scared_duration = 0;
+					while (scared_duration < scared_target_duration_short) {
+						vel.angular.z = 0.0;
+						std::this_thread::sleep_for(std::chrono::milliseconds(100)); // pause for 100 ms
+						vel_pub.publish(vel);
+						scared_duration = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now()-scared_timer_start).count();
+
+					}
+				//}
+					
+				// counter ++;
+
+			// }  
+
+			has_just_exited_afraid = true;
+			afraid_exit_lock = true;
+			cout << "Afraid Exit Lock" << afraid_exit_lock <<endl;
+			destroyAllWindows();
+			
+		}
+		
+		else if(world_state == 3) {
+			ROS_INFO("World State 3");
+			while (wheel_drop_triggered){
+				prompt_for_name = true;
+
+				// While the TurtleBot is raise, play sound
+				sc.playWave(path_to_sounds + "excited.wav");
+				std::this_thread::sleep_for(std::chrono::milliseconds(6000)); // pause for 100 ms
+
+				// Show image of Homer cheering	on the laptop screen	
+
+			}
+
+		}
+
+		//---------------------WORLD STATE 4 = SADNESS-----------------------------------
+		else if(world_state==4){
+			
+			// play sad noise
+			sc.playWave(path_to_sounds + "sad.wav");
+
+			//INSERT IMSHOW CODE
+			cv::namedWindow("AHHHH", cv::WINDOW_NORMAL);
+			cv::setWindowProperty("AHHHH", CV_WND_PROP_FULLSCREEN, CV_WINDOW_FULLSCREEN);
+			cv::imshow("AHHHH",sad_img);
+			waitKey(6000);
+
+			//if sad set speed to half ie follow person slowly
+			follow_cmd.linear.x/=2;
+			vel_pub.publish(follow_cmd);
+
+
+
+		}
+    		
+
+		secondsElapsed = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now()-start).count();
+
 	}
 
 	return 0;
