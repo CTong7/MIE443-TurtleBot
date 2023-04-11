@@ -14,8 +14,6 @@
 using namespace std;
 using namespace cv;
 
-
-
 geometry_msgs::Twist follow_cmd;
 int world_state;
 uint8_t wheel[2]={kobuki_msgs::WheelDropEvent::RAISED, kobuki_msgs::WheelDropEvent::RAISED};
@@ -107,17 +105,17 @@ int main(int argc, char **argv)
 	// imshow("1",angry_img);
 	// waitKey(0);
 
-std::chrono::time_point<std::chrono::system_clock> scared_timer_start, excited_timer_start, sound_timer_start, image_timer;
-scared_timer_start = std::chrono::system_clock::now();
-uint64_t scared_duration = 0;
-float scared_target_duration_long = 1;
-float scared_target_duration_short = 0.25;
+	std::chrono::time_point<std::chrono::system_clock> scared_timer_start, excited_timer_start, sound_timer_start, image_timer;
+	scared_timer_start = std::chrono::system_clock::now();
+	uint64_t scared_duration = 0;
+	float scared_target_duration_long = 1;
+	float scared_target_duration_short = 0.25;
 
-uint64_t excited_duration = 0;
-float excited_target_duration_long = 1;
-float excited_target_duration_short = 0.25;
+	uint64_t excited_duration = 0;
+	float excited_target_duration_long = 1;
+	float excited_target_duration_short = 0.25;
 
-uint64_t sound_duration = 0;
+	uint64_t sound_duration = 0;
 
 	//publishers
 	ros::Publisher vel_pub = nh.advertise<geometry_msgs::Twist>("cmd_vel_mux/input/teleop",1);
@@ -127,10 +125,10 @@ uint64_t sound_duration = 0;
 	ros::Subscriber bumper = nh.subscribe("mobile_base/events/bumper", 10, &bumperCB);
 	ros::Subscriber wheel_drop = nh.subscribe("mobile_base/events/wheel_drop", 10, &wheel_drop_CB);
 
-    // contest count down timer = 7 MINUTES
-    std::chrono::time_point<std::chrono::system_clock> start;
-    start = std::chrono::system_clock::now();
-    uint64_t secondsElapsed = 0;
+	// contest count down timer = 7 MINUTES
+	std::chrono::time_point<std::chrono::system_clock> start;
+	start = std::chrono::system_clock::now();
+	uint64_t secondsElapsed = 0;
 
 	//--------DEFINE 2 IMAGE TRANSPORT CLASSES: 1RGB CLASS & 1 DEPTH CLASS --------------------
 	imageTransporter rgbTransport("camera/image/", sensor_msgs::image_encodings::BGR8); //--for Webcam
@@ -166,7 +164,6 @@ uint64_t sound_duration = 0;
 		ros::Duration(0.1).sleep();
 		vel_pub.publish(follow_cmd);
 
-
 		bool wheel_drop_triggered = false; //wheel_drop_triggered = 0
 		string user_name;
 
@@ -187,16 +184,7 @@ uint64_t sound_duration = 0;
 			//can i just do bumper[b_idx].state?? so much easier to understand
 			// how can you even multiply a boolean and a 0/1???
 		}
-		ROS_INFO("Bumper Trigger: %i", any_bumper_pressed);
-		// int i;
-		// for (i = 0; i < 3;i++){
-		// 	ros::spinOnce(); // obtain new info from topics
-		// 	ros::Duration(0.01).sleep();
-		// 	//Always publish follow cmds.
-		// 	vel_pub.publish(follow_cmd);
-		// }
 		
-
 		/* Set world state based on sensor info
 		world_state == 0 -> 
 		world_state == 1 -> Afraid emotion
@@ -205,21 +193,20 @@ uint64_t sound_duration = 0;
 		world_state == 4 -> 
 		
 		*/
-		// Manual Setting
-		//world_state = 1;
-
+		
 		ROS_INFO("follow cmd: %f", follow_cmd.linear.x);
 		ROS_INFO("Seconds ealpseds: %lu", secondsElapsed);
 		
+		//Check sensors and set world_state
 		if (!afraid_exit_lock && !any_bumper_pressed && !sad_follow_lock) { // If afraid_exit_lock is true, never execute.
 			if ((follow_cmd.linear.x < 0.05 && follow_cmd.linear.x > -0.05 && secondsElapsed > 5)){
 				ROS_INFO("World State Afraid Update 1");
-				world_state = 1;
+				world_state = 1; // scared
 			}
 
 		} else if (any_bumper_pressed && !sad_follow_lock){
 			ROS_INFO("World State Angry Update 2");
-			world_state = 2;
+			world_state = 2; // angry
 		}
 		
 		else if (wheel_drop_triggered && !prompt_for_name) {
@@ -230,7 +217,6 @@ uint64_t sound_duration = 0;
 			prompt_for_name = true;
 			continue;
 
-			// If one of the wheels has dropped, then enter into world_state 3
 		} else if (has_just_exited_afraid && !sad_follow_lock){
 			cout << "Has Just Exited Afraid" <<endl;
 			if (follow_cmd.linear.x > 0.1 || follow_cmd.linear.x < -0.1){
@@ -240,13 +226,13 @@ uint64_t sound_duration = 0;
 			}
 			else {
 				world_state = 0;
-				cout << "Waiting to find Person" <<endl;
+				sc.playWave(path_to_sounds + "Where are you.wav"); // specify name of wave file
 
+				cout << "Waiting to find Person" <<endl;
 			}
 
-		
 		} else if (prompt_for_name){
-			
+
 			cout << "Please enter your Name: " <<endl;
     		getline(cin, user_name);
 
@@ -257,6 +243,7 @@ uint64_t sound_duration = 0;
 
 			}
 			else {
+				sc.playWave(path_to_sounds + "You aren't my owner.wav"); // specify name of wave file
 
 				ROS_INFO("You are not my owner ... ");
 				world_state = 4; // Sad
@@ -279,7 +266,7 @@ uint64_t sound_duration = 0;
 			//sc.playWave(path_to_sounds + "sound.wav"); 
 			ROS_INFO("World State: %i", world_state);
 
-			//follow_cmd.linear.x *= 0.7; // use this for sadness 
+			//follow_cmd.linear.x = 0.3;
 			vel_pub.publish(follow_cmd);
 
 		} else if(world_state == 1){
@@ -376,11 +363,12 @@ uint64_t sound_duration = 0;
 
 			//-----------------SHOW PNG--------------------------------------------
 
-			// cv::namedWindow("ang", cv::WINDOW_NORMAL);
-			// cv::setWindowProperty("AHHHH", CV_WND_PROP_FULLSCREEN, CV_WINDOW_FULLSCREEN);
-			// cv::imshow("AHHHH",afraid_img);
+			cv::namedWindow("ANGRY", cv::WINDOW_NORMAL);
+			cv::setWindowProperty("ANGRY", CV_WND_PROP_FULLSCREEN, CV_WINDOW_FULLSCREEN);
 			
 			for (uint32_t i=0;i<6; i++){
+				cv::imshow("ANGRY",angry_img);
+				waitKey(1);
 
 				//reverse by 20cm
 				angular=0.0;
@@ -408,6 +396,7 @@ uint64_t sound_duration = 0;
 			}
 
 			// Exits Anger Emotion
+			destroyAllWindows();
 			vel.angular.z = 0.0;
 			vel.linear.x = 0.0;
 			world_state=0;
