@@ -117,6 +117,9 @@ int main(int argc, char **argv)
 
 	uint64_t sound_duration = 0;
 
+	uint64_t image_duration = 0;
+
+
 	//publishers
 	ros::Publisher vel_pub = nh.advertise<geometry_msgs::Twist>("cmd_vel_mux/input/teleop",1);
 
@@ -226,24 +229,65 @@ int main(int argc, char **argv)
 			}
 			else {
 				world_state = 0;
-				sc.playWave(path_to_sounds + "Where are you.wav"); // specify name of wave file
+				sc.playWave(path_to_sounds + "where-are-you.wav"); // specify name of wave file
+				sound_timer_start = std::chrono::system_clock::now();
+				sound_duration = 0;
+			
+				while (sound_duration < 3) {
 
+					std::this_thread::sleep_for(std::chrono::milliseconds(100)); // pause for 100 ms
+					sound_duration = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now()-sound_timer_start).count();
+
+				}
+				sound_duration = 0;
 				cout << "Waiting to find Person" <<endl;
 			}
 
 		} else if (prompt_for_name){
 
+			sc.playWave(path_to_sounds + "who-are-you.wav"); // specify name of wave file
+			sound_timer_start = std::chrono::system_clock::now();
+			sound_duration = 0;
+		
+			while (sound_duration < 3) {
+
+				std::this_thread::sleep_for(std::chrono::milliseconds(100)); // pause for 100 ms
+				sound_duration = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now()-sound_timer_start).count();
+
+			}
+			sound_duration = 0;
 			cout << "Please enter your Name: " <<endl;
     		getline(cin, user_name);
 
 			if (user_name == "Andrew"){
+				sc.playWave(path_to_sounds + "owner-welcome-back.wav"); // specify name of wave file
+				sound_timer_start = std::chrono::system_clock::now();
+				sound_duration = 0;
+			
+				while (sound_duration < 3) {
+
+					std::this_thread::sleep_for(std::chrono::milliseconds(100)); // pause for 100 ms
+					sound_duration = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now()-sound_timer_start).count();
+
+				}
+				sound_duration = 0;
 				ROS_INFO("YAY I FOUND YOU AGAIN!");
 				world_state = 3; // excited
 				prompt_for_name = false;
 
 			}
 			else {
-				sc.playWave(path_to_sounds + "You aren't my owner.wav"); // specify name of wave file
+				sc.playWave(path_to_sounds + "not-owner.wav"); // specify name of wave file
+				sound_timer_start = std::chrono::system_clock::now();
+				sound_duration = 0;
+			
+				while (sound_duration < 3) {
+
+					std::this_thread::sleep_for(std::chrono::milliseconds(100)); // pause for 100 ms
+					sound_duration = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now()-sound_timer_start).count();
+
+				}
+				sound_duration = 0;
 
 				ROS_INFO("You are not my owner ... ");
 				world_state = 4; // Sad
